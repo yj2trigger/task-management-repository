@@ -12,10 +12,12 @@ task-management-repository/
 ├── README.md                    # 이 파일
 │
 ├── projects/                    # 하위 프로젝트 (Git Submodule)
-│   └── ic-pbl/                  → yj2trigger/pmg-ic-pbl
+│   ├── ic-pbl/                  → yj2trigger/pmg-ic-pbl
+│   └── ESG/                     → yj2trigger/ESG
 │
 ├── status/                      # 프로젝트별 현재 상태 요약
-│   └── ic-pbl.md
+│   ├── ic-pbl.md
+│   └── ESG.md
 │
 ├── tasks/                       # 태스크 트래킹
 │   ├── backlog.md
@@ -33,6 +35,7 @@ task-management-repository/
 | 프로젝트 | 레포지토리 | 상태 |
 |---------|-----------|------|
 | ic-pbl | [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | 🔵 GUI 개발 진행 중 |
+| ESG | [yj2trigger/ESG](https://github.com/yj2trigger/ESG) | ⬜ 초기화 |
 
 ---
 
