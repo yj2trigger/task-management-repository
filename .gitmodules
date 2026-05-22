@@ -1,4 +1,4 @@
 [submodule "projects/ic-pbl"]
 	path = projects/ic-pbl
-	url = https://github.com/yj2trigger/ic-pbl-----
+	url = https://github.com/yj2trigger/pmg-ic-pbl
 	branch = main
