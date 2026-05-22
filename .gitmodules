@@ -2,3 +2,8 @@
 	path = projects/ic-pbl
 	url = https://github.com/yj2trigger/pmg-ic-pbl
 	branch = main
+
+[submodule "projects/ESG"]
+	path = projects/ESG
+	url = https://github.com/yj2trigger/ESG
+	branch = main
