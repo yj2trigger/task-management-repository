@@ -5,10 +5,10 @@
 
 ---
 
-## 🔵 현재 단계
+## ✅ 현재 단계
 
-**STEP 10 — GUI 확장 시작**  
-현재 활성 유닛: `GUI-01` — 레이아웃 뼈대 + StdoutRedirector (승인 대기)
+**GUI 구현 완료 — 패키징 / 마무리 단계**  
+PyQt6 기반 10개 화면 + VoiceService 전체 구현 완료
 
 ---
 
@@ -32,24 +32,30 @@
 
 ---
 
-## 🔵 GUI 개발 진행 현황
+## ✅ 완료된 GUI 유닛 (PyQt6 기반)
 
-| 순서 | Unit | 파일 | 상태 |
+| Unit | 파일 | 설명 | 상태 |
 |------|------|------|------|
-| GUI-01 | 레이아웃 + stdout 리다이렉터 | gui/log_panel.py | 🔵 대기 |
-| GUI-02 | CLI 출력 파싱 상태 머신 | gui/state_machine.py | ⬜ 대기 |
-| GUI-03 | 숫자패드 위젯 | gui/widgets/numpad.py | ⬜ 대기 |
-| GUI-04 | 메뉴 카드 위젯 | gui/widgets/menu_card.py | ⬜ 대기 |
-| GUI-05 | 컨트롤 패널 (상태별 렌더) | gui/control_panel.py | ⬜ 대기 |
-| GUI-06 | 메인 앱 통합 | gui/app.py | ⬜ 대기 |
-| GUI-07 | GUI 진입점 | gui/gui_main.py | ⬜ 대기 |
+| GUI-APP | gui/app.py | QApplication 진입점 | ✅ 완료 |
+| GUI-WIN | gui/main_window.py | KioskWindow, 네비게이션 API, 글로벌 스타일시트 | ✅ 완료 |
+| GUI-VOICE | gui/voice_service.py | TTS 음성 안내 | ✅ 완료 |
+| GUI-S01 | gui/screens/idle.py | 대기 화면 | ✅ 완료 |
+| GUI-S02 | gui/screens/main_menu.py | 메인 메뉴 | ✅ 완료 |
+| GUI-S03 | gui/screens/product_list.py | 상품 목록 | ✅ 완료 |
+| GUI-S04 | gui/screens/customize.py | 옵션 커스터마이징 | ✅ 완료 |
+| GUI-S05 | gui/screens/cart.py | 장바구니 | ✅ 완료 |
+| GUI-S06 | gui/screens/payment_method.py | 결제 수단 선택 | ✅ 완료 |
+| GUI-S07 | gui/screens/cash_payment.py | 현금 결제 | ✅ 완료 |
+| GUI-S08 | gui/screens/receipt.py | 영수증 | ✅ 완료 |
+| GUI-S09 | gui/screens/admin_auth.py | 관리자 인증 | ✅ 완료 |
+| GUI-S10 | gui/screens/admin_menu.py | 관리자 메뉴 | ✅ 완료 |
 
 ---
 
 ## ⏭ 보류 중
 
-- UNIT-07: discount.py (할인 정책) — 시간 여유 시 구현
-- UNIT-13: pyproject.toml + README.md (패키징 설정) — 대기
+- UNIT-07: discount.py — 할인 정책 (후순위)
+- UNIT-13: pyproject.toml + README.md — 패키징 설정
 
 ---
 
