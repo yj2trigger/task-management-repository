@@ -1,64 +1,66 @@
-# 📊 ic-pbl 프로젝트 상태
+# 📊 ic-pbl 프로젝트 상태 (EDK)
 
-> 마지막 업데이트: 2026-05-23  
+> 마지막 업데이트: 2026-05-23
 > 원본 레포: [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl)
 
 ---
 
-## ✅ 현재 단계
+## ⚠️ 도메인 전환 진행 중
 
-**GUI 구현 완료 — 패키징 / 마무리 단계**  
-PyQt6 기반 10개 화면 + VoiceService 전체 구현 완료
+**기존**: Micro-Factory Kiosk (커피/영양구미)
+**변경**: EDK — Erica Drug King (증상 선택 기반 일반의약품 정보 제공 키오스크)
 
----
-
-## ✅ 완료된 Core 유닛
-
-| Unit | 파일 | 테스트 결과 | 완료일 |
-|------|------|------------|--------|
-| UNIT-01 | exceptions.py | 16/16 PASS | 2026-05-11 |
-| UNIT-02 | ingredient.py | 12/12 PASS | 2026-05-12 |
-| UNIT-03 | product.py | 5/5 PASS | 2026-05-12 |
-| UNIT-04+05 | cart.py (recipe 통합) | 35/35 PASS | 2026-05-12 |
-| UNIT-06 | payment.py | 35/35 PASS | 2026-05-12 |
-| UNIT-08 | stats.py | 12/12 PASS | 2026-05-12 |
-| UNIT-09 | data_manager.py | 8/8 PASS | 2026-05-12 |
-| UNIT-10 | kiosk_controller.py | 15/15 PASS | 2026-05-12 |
-| UNIT-11 | cli_view.py | 수동 테스트 완료 | 2026-05-12 |
-| UNIT-12 | main.py | 임포트 검증 완료 | 2026-05-12 |
-| 시나리오 | test_scenarios.py | 29/29 PASS | 2026-05-12 |
-
-**총 테스트: 167/167 PASS** ✅
+기존 PyQt6 아키텍처를 재활용하고 도메인만 교체하는 전략으로 진행.
 
 ---
 
-## ✅ 완료된 GUI 유닛 (PyQt6 기반)
+## 🔵 현재 단계
 
-| Unit | 파일 | 설명 | 상태 |
-|------|------|------|------|
-| GUI-APP | gui/app.py | QApplication 진입점 | ✅ 완료 |
-| GUI-WIN | gui/main_window.py | KioskWindow, 네비게이션 API, 글로벌 스타일시트 | ✅ 완료 |
-| GUI-VOICE | gui/voice_service.py | TTS 음성 안내 | ✅ 완료 |
-| GUI-S01 | gui/screens/idle.py | 대기 화면 | ✅ 완료 |
-| GUI-S02 | gui/screens/main_menu.py | 메인 메뉴 | ✅ 완료 |
-| GUI-S03 | gui/screens/product_list.py | 상품 목록 | ✅ 완료 |
-| GUI-S04 | gui/screens/customize.py | 옵션 커스터마이징 | ✅ 완료 |
-| GUI-S05 | gui/screens/cart.py | 장바구니 | ✅ 완료 |
-| GUI-S06 | gui/screens/payment_method.py | 결제 수단 선택 | ✅ 완료 |
-| GUI-S07 | gui/screens/cash_payment.py | 현금 결제 | ✅ 완료 |
-| GUI-S08 | gui/screens/receipt.py | 영수증 | ✅ 완료 |
-| GUI-S09 | gui/screens/admin_auth.py | 관리자 인증 | ✅ 완료 |
-| GUI-S10 | gui/screens/admin_menu.py | 관리자 메뉴 | ✅ 완료 |
+**EDK-01 진행 중**: `product.py` → `medicine.py` 리팩터링
 
 ---
 
-## ⏭ 보류 중
+## ✅ 재활용 확정 유닛
 
-- UNIT-07: discount.py — 할인 정책 (후순위)
-- UNIT-13: pyproject.toml + README.md — 패키징 설정
+| 파일 | 재활용 방식 |
+|------|-----------|
+| exceptions.py | 그대로 재활용 |
+| ingredient.py | 의약품 재고 수량으로 재활용 |
+| data_manager.py | 의약품 JSON 데이터 관리로 재활용 |
+| gui/app.py | 그대로 재활용 |
+| gui/voice_service.py | 그대로 재활용 |
+| gui/screens/admin_auth.py | 그대로 재활용 |
+
+---
+
+## 🔄 EDK 전환 작업 목록 (Core)
+
+| 작업 | 파일 | 상태 |
+|------|------|------|
+| EDK-01 | product.py → medicine.py | 🔵 진행 중 |
+| EDK-02 | cart.py 단순화 (결제 제거) | ⬜ 대기 |
+| EDK-03 | payment.py 제거 | ⬜ 대기 |
+| EDK-04 | kiosk_controller.py → drug_controller.py | ⬜ 대기 |
+| EDK-05 | data_manager.py 데이터 구조 전환 | ⬜ 대기 |
+| EDK-06 | main.py 초기화 로직 교체 | ⬜ 대기 |
+| EDK-07 | cli_view.py 증상 탐색 흐름으로 교체 | ⬜ 대기 |
+
+## 🔄 EDK 전환 작업 목록 (GUI)
+
+| 작업 | 기존 → 신규 | 상태 |
+|------|-----------|------|
+| GUI-EDK-01 | main_window.py 네비게이션 교체 | ⬜ 대기 |
+| GUI-EDK-02 | main_menu.py → symptom_select.py | ⬜ 대기 |
+| GUI-EDK-03 | product_list.py → medicine_list.py | ⬜ 대기 |
+| GUI-EDK-04 | customize.py → medicine_detail.py | ⬜ 대기 |
+| GUI-EDK-05 | receipt.py → caution.py | ⬜ 대기 |
+| GUI-EDK-06 | (신규) emergency.py | ⬜ 대기 |
+| GUI-EDK-07 | admin_menu.py 수정 | ⬜ 대기 |
+| GUI-EDK-08 | cart.py / payment_method.py / cash_payment.py 제거 | ⬜ 대기 |
 
 ---
 
 ## 🚨 현재 리스크
 
-없음
+- 기존 테스트(test_*.py)가 구 도메인 기반 — EDK 전환 후 재작성 필요
+- payment.py 관련 테스트 전체 폐기 예정
