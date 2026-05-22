@@ -4,6 +4,6 @@
 
 ---
 
-## [ic-pbl]
+## [ic-pbl] EDK 도메인 전환
 
-- [ ] GUI-01: gui/log_panel.py — 레이아웃 뼈대 + StdoutRedirector (승인 대기 중)
+- [ ] EDK-01: product.py → medicine.py — Medicine 클래스 리팩터링 (Coffee/Gummy 제거)
