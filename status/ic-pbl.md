@@ -1,7 +1,7 @@
 # 📊 ic-pbl 프로젝트 상태
 
 > 마지막 업데이트: 2026-05-23  
-> 원본 레포: [yj2trigger/ic-pbl-----](https://github.com/yj2trigger/ic-pbl-----)
+> 원본 레포: [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl)
 
 ---
 
