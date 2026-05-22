@@ -11,11 +11,11 @@
 |------|------|------|
 | 요구사항 분석 (이 문서) | `requirements.md` | ✅ 완료 |
 | 구현 범위 | `scope.md` | ✅ 완료 |
-| 용어 사전 | `terminology.md` | 🔄 업데이트 필요 |
-| 시스템 흐름 | `system_flow.md` | 🔄 업데이트 필요 |
-| 아키텍처 | `architecture.md` | 🔄 업데이트 필요 |
-| GUI 아키텍처 | `gui_architecture.md` | 🔄 업데이트 필요 |
-| 테스트 전략 | `test_strategy.md` | 🔄 업데이트 필요 |
+| 아키텍처 | `architecture.md` | ✅ 완료 (EDK 전환 반영) |
+| GUI 아키텍처 | `gui_architecture.md` | 📦 구 계획서 보관 (실제 구현과 다름) |
+| 시스템 흐름 | `system_flow.md` | ✅ 완료 (EDK 흐름 반영) |
+| 용어 사전 | `terminology.md` | ✅ 완료 (EDK 기준 요약) |
+| 테스트 전략 | `test_strategy.md` | ✅ 완료 (EDK 전환 기준) |
 | 현재 상태 | `CURRENT_STATE.md` | ✅ 완료 |
 
 ---
