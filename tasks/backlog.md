@@ -15,3 +15,9 @@
 - [ ] GUI-07: gui/gui_main.py — GUI 진입점 구현
 - [ ] UNIT-07: discount.py — 할인 정책 구현 (후순위)
 - [ ] UNIT-13: pyproject.toml + README.md — 패키징 설정
+
+---
+
+## [ESG]
+
+- [ ] 프로젝트 초기 설정 및 요구사항 정의
