@@ -5,9 +5,9 @@
 
 ---
 
-## ✅ 현재 단계
+## 🔵 현재 단계
 
-**설계 9단계 전체 완료 (승인 대기) → 구현 단계 대기 중**
+**구현 1단계 완료 (골격 + Docker) → 구현 2단계(성별 선택) 승인 대기**
 
 ---
 
@@ -19,7 +19,7 @@
 | 한 줄 정의 | 기숙사생들이 세탁기 사용 가능 여부를 원격으로 보고 합리적으로 판단할 수 있도록 하는 앱 |
 | 기술 스택 | React + TypeScript / FastAPI / PostgreSQL / Docker / Railway |
 | 목적 | 과제 프로토타입 + 실제 배포 + 포트폴리오 |
-| 팀 구성 | 팀 프로젝트 (사실상 개인 진행) |
+| 인증 방식 | 성별 선택 화면 (localStorage 저장) — 프로토타입용 |
 
 ---
 
@@ -33,32 +33,48 @@
 
 ---
 
-## 설계 진행 현황
+## 구현 진행 현황
 
-| 단계 | 내용 | 상태 |
-|------|------|------|
-| 1단계 | 서비스 정의 | ✅ 완료 |
-| 2단계 | 전체 시스템 아키텍처 | ✅ 완료 (승인 대기) |
-| 3단계 | 프론트엔드 구조 설계 | ✅ 완료 (승인 대기) |
-| 4단계 | 백엔드 구조 설계 | ✅ 완료 (승인 대기) |
-| 5단계 | DB 및 데이터 흐름 설계 | ✅ 완료 (승인 대기) |
-| 6단계 | Docker 환경 구성 | ✅ 완료 (승인 대기) |
-| 7단계 | Railway 배포 전략 | ✅ 완료 (승인 대기) |
-| 8단계 | CI/CD 자동화 | ✅ 완료 (승인 대기) |
-| 9단계 | 운영 고려사항 | ✅ 완료 (승인 대기) |
+| 기능 | 백엔드 | 프론트엔드 |
+|------|--------|-----------|
+| 1. 프로젝트 골격 + Docker | ✅ 완료 | ✅ 완료 |
+| 2. 성별 선택 | — | ⏳ 승인 대기 |
+| 3. 세탁기 상태 조회 (Mode A/B/C) | ⏳ 대기 | ⏳ 대기 |
+| 4. Mode B — 소프트 예약 | ⏳ 대기 | ⏳ 대기 |
+| 5. Mode C — 대기열 | ⏳ 대기 | ⏳ 대기 |
+| 6. WebSocket 실시간 연결 | ⏳ 대기 | ⏳ 대기 |
 
 ---
 
-## 주요 기술 결정 사항 (확정)
+## 생성된 파일 구조
 
-| 항목 | 선택 | 비고 |
-|------|------|------|
-| 실시간 통신 | WebSocket | 대기열 알림 양방향 필요 |
-| 알림 방식 | WebSocket 인앱 알림 | 추후 PWA Push로 확장 예정 |
-| 대기열 저장 | PostgreSQL | 별도 Redis 불필요 |
-| 상태 관리 (프론트) | Zustand | 보일러플레이트 최소화 |
-| 타이머 처리 | Lazy expiration | 프로토타입 단계 |
-| IoT 연결 전 | 더미데이터 (DB 시드 + 수동 토글) | IoT 연결 시 Repository Layer만 교체 |
+```
+project/
+├── docker-compose.yml
+├── .env.example
+├── .gitignore
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/
+│       ├── main.py         ← FastAPI 앱 + CORS + /health
+│       ├── config.py       ← 환경변수
+│       ├── core/database.py ← DB 연결 + get_db()
+│       ├── api/            ← (기능별 router 추가 예정)
+│       ├── models/         ← (기능별 ORM 모델 추가 예정)
+│       ├── schemas/        ← (기능별 Pydantic 스키마 추가 예정)
+│       ├── services/       ← (기능별 비즈니스 로직 추가 예정)
+│       └── repositories/   ← (기능별 DB 접근 추가 예정)
+└── frontend/
+    ├── Dockerfile
+    ├── package.json        ← React + TS + Zustand + React Router
+    ├── tsconfig.json
+    ├── vite.config.ts
+    ├── index.html
+    └── src/
+        ├── main.tsx        ← BrowserRouter 래핑
+        └── App.tsx         ← 라우터 뼈대 (페이지 추가 예정)
+```
 
 ---
 
@@ -68,17 +84,6 @@
 
 ---
 
-## 다음 단계: 구현
-
-설계 승인 후 구현 시작 순서:
-1. DB 모델 + Alembic 마이그레이션 + 더미데이터 시드
-2. 백엔드 API 구현 (REST → WebSocket 순)
-3. 프론트엔드 구현 (더미데이터 → API 연결 순)
-4. Docker 로컬 통합 테스트
-5. Railway 배포
-
----
-
 ## 상세 설계 문서
 
-- 원본: `design_progress.md` (ESG 레포) ← 1~9단계 전체 포함
+- `design_progress.md` (ESG 레포) ← 1~9단계 설계 전체 포함
