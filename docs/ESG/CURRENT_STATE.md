@@ -1,13 +1,13 @@
 # CURRENT_STATE — ESG (기숙사 세탁기 예약 서비스)
 
-> Last Update: 2026-05-23
+> Last Update: 2026-05-24
 > 원본 레포: [yj2trigger/ESG](https://github.com/yj2trigger/ESG)
 
 ---
 
 ## 🔵 현재 단계
 
-**구현 1단계 완료 (골격 + Docker) → 구현 2단계(성별 선택) 승인 대기**
+**구현 2단계 완료 (성별 선택) → 구현 3단계(세탁기 상태 조회) 대기**
 
 ---
 
@@ -38,11 +38,24 @@
 | 기능 | 백엔드 | 프론트엔드 |
 |------|--------|-----------|
 | 1. 프로젝트 골격 + Docker | ✅ 완료 | ✅ 완료 |
-| 2. 성별 선택 | — | ⏳ 승인 대기 |
+| 2. 성별 선택 | — | ✅ 완료 |
 | 3. 세탁기 상태 조회 (Mode A/B/C) | ⏳ 대기 | ⏳ 대기 |
 | 4. Mode B — 소프트 예약 | ⏳ 대기 | ⏳ 대기 |
 | 5. Mode C — 대기열 | ⏳ 대기 | ⏳ 대기 |
 | 6. WebSocket 실시간 연결 | ⏳ 대기 | ⏳ 대기 |
+
+---
+
+## 구현 2단계 완료 내용 (2026-05-24)
+
+| 파일 | 내용 |
+|------|------|
+| `src/types/user.ts` | `Gender = 'male' \| 'female'` 타입 정의 |
+| `src/store/authStore.ts` | Zustand + persist 미들웨어, localStorage 키 `esg-auth` |
+| `src/pages/GenderSelectPage.tsx` | 남성/여성 선택 UI, 선택 시 `/` redirect |
+| `src/App.tsx` | `/gender` 라우트 추가, gender 없으면 자동 redirect |
+| `src/__tests__/authStore.test.ts` | store 단위 테스트 5개 |
+| `vite.config.ts` | `test.environment: 'jsdom'` 추가 |
 
 ---
 
@@ -69,11 +82,20 @@ project/
     ├── Dockerfile
     ├── package.json        ← React + TS + Zustand + React Router
     ├── tsconfig.json
-    ├── vite.config.ts
+    ├── vite.config.ts      ← test.environment: jsdom 추가
     ├── index.html
     └── src/
-        ├── main.tsx        ← BrowserRouter 래핑
-        └── App.tsx         ← 라우터 뼈대 (페이지 추가 예정)
+        ├── main.tsx
+        ├── App.tsx         ← /gender 라우트, gender 없으면 redirect
+        ├── types/
+        │   └── user.ts     ← Gender 타입
+        ├── store/
+        │   └── authStore.ts ← Zustand + persist
+        ├── pages/
+        │   └── GenderSelectPage.tsx
+        └── __tests__/
+            ├── setup.test.ts
+            └── authStore.test.ts ← 5개 단위 테스트
 ```
 
 ---

@@ -39,5 +39,16 @@
 ## [ESG] 설계 완료
 
 - [x] 1단계: 서비스 정의
-- [x] 2단계: 전체 시스템 아키텍처 (승인 대기)
-- [x] 3단계: 프론트엔드 구조 설계 (승인 대기)
+- [x] 2단계: 전체 시스템 아키텍처
+- [x] 3단계: 프론트엔드 구조 설계
+
+## [ESG] 구현 완료
+
+- [x] 구현 1단계: 프로젝트 골격 + Docker (2026-05-23)
+- [x] 구현 2단계: 성별 선택 UI (2026-05-24)
+  - src/types/user.ts — Gender 타입
+  - src/store/authStore.ts — Zustand + localStorage persist
+  - src/pages/GenderSelectPage.tsx — 남/여 선택 UI
+  - src/App.tsx — /gender 라우트, 미선택 시 자동 redirect
+  - src/__tests__/authStore.test.ts — 단위 테스트 5개
+  - vite.config.ts — jsdom 환경 추가
