@@ -72,6 +72,29 @@ npm run test
 - `ci.yml`은 레포에 미리 작성해 두되, 현재는 수동 실행(`workflow_dispatch`)으로만 트리거
 - 팀 협업 또는 실배포 단계 전환 시 `pull_request` 트리거로 변경
 
+### 5. 레포지토리 접근 권한
+
+#### 쓰기 가능 (read + write)
+
+| owner | 레포 |
+|-------|------|
+| `yj2trigger` | `task-management-repository` |
+| `yj2trigger` | `pmg-ic-pbl` |
+| `yj2trigger` | `ESG` |
+
+#### 읽기 전용 (read only) — 절대 쓰기 금지
+
+| owner | 레포 | 비고 |
+|-------|------|------|
+| `we-meet-trip` | `map-service-client` | 팀 프론트엔드 |
+| `we-meet-trip` | `map-service-user` | 팀 사용자/인증 |
+| `we-meet-trip` | `map-service-hub` | 팀 API Gateway |
+| `we-meet-trip` | `map-service-infra` | 팀 인프라 |
+| `we-meet-trip` | `map-service-agent` | 팀 AI 에이전트 |
+
+> `we-meet-trip` organization의 모든 레포는 참고/읽기만 가능합니다.
+> 어떤 상황에서도 이 레포들에 커밋, 파일 생성, 파일 수정을 하지 않습니다.
+
 ---
 
 ## 흐름 요약
