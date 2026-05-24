@@ -81,3 +81,8 @@
   - .env 생성 (git 제외)
   - docker compose up --build 동작 확인
   - 백엔드 26/26 PASS, 프론트엔드 6/6 PASS
+- [x] 구현 8단계: CI/CD 워크플로우 생성 (2026-05-24)
+  - .github/workflows/ci.yml — push/PR 시 pytest + vitest 자동 실행
+  - .github/workflows/cd.yml — main push 시 테스트 통과 후 Railway 자동 배포
+  - CD: 테스트 실패 시 배포 차단 (needs: [test-backend, test-frontend])
+  - Railway 서비스 연결은 수동 설정 필요 (RAILWAY_TOKEN 등)

@@ -35,10 +35,13 @@
 
 - [ ] 대시보드 loading 무한 버그 — `machineStore.setData` + `DashboardPage` 수정 후 브라우저 확인 필요
 
-## [ESG] 구현 8단계: CI/CD
+## [ESG] 구현 8단계: CI/CD — Railway 연결 (남은 수동 작업)
 
-- [ ] `.github/workflows/ci.yml` 완성 — pytest + vitest 자동 실행
-- [ ] `.github/workflows/cd.yml` 생성 — main 브랜치 push 시 Railway 자동 배포
+- [ ] Railway 프로젝트 생성 + GitHub 레포 연결
+- [ ] RAILWAY_TOKEN → GitHub Secrets 등록
+- [ ] RAILWAY_BACKEND_SERVICE, RAILWAY_FRONTEND_SERVICE → GitHub Variables 등록
+- [ ] Railway 각 서비스 Root Directory 설정 (backend/, frontend/)
+- [ ] Railway frontend 서비스 환경변수 설정 (VITE_API_URL, VITE_WS_URL → wss://)
 
 ## [ESG] 구현 9단계: 운영 고려사항
 

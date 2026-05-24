@@ -7,7 +7,7 @@
 
 ## 🔵 현재 단계
 
-**구현 7단계 완료 (Docker 로컬 실행) → 구현 8단계(CI/CD) 대기**
+**구현 8단계 완료 (CI/CD 워크플로우) → Railway 수동 연결 + 구현 9단계(운영) 대기**
 
 ---
 
@@ -44,7 +44,7 @@
 | 5. Mode B 소프트 예약 + Mode C 대기열 | ✅ 완료 | ✅ 완료 |
 | 6. WebSocket 실시간 연결 | ✅ 완료 | ✅ 완료 |
 | 7. Docker Compose 로컬 실행 | ✅ 완료 | ✅ 완료 |
-| 8. CI/CD (GitHub Actions → Railway) | ⏳ 대기 | ⏳ 대기 |
+| 8. CI/CD (GitHub Actions → Railway) | ✅ 완료 | ✅ 완료 |
 | 9. 운영 고려사항 (rate limit 등) | ⏳ 대기 | — |
 
 ---
@@ -53,7 +53,7 @@
 
 | 이슈 | 현상 | 상태 |
 |------|------|------|
-| 대시보드 로딩 무한 | 회원가입 후 `loading: true` 미해제 | 🔧 수정 중 (machineStore.setData에 loading:false 추가, DashboardPage async/await 전환) |
+| 대시보드 로딩 무한 | 회원가입 후 `loading: true` 미해제 | ✅ 수정 완료 |
 
 ---
 
