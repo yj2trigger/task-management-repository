@@ -35,20 +35,15 @@
 
 - [ ] 대시보드 loading 무한 버그 — `machineStore.setData` + `DashboardPage` 수정 후 브라우저 확인 필요
 
-## [ESG] 구현 8단계: CI/CD — Railway 연결 (남은 수동 작업)
+## [ESG] 구현 8단계: CI/CD — 수동 설정 (사용자)
 
-- [ ] Railway 프로젝트 생성 + GitHub 레포 연결
-- [ ] RAILWAY_TOKEN → GitHub Secrets 등록
-- [ ] RAILWAY_BACKEND_SERVICE, RAILWAY_FRONTEND_SERVICE → GitHub Variables 등록
-- [ ] Railway 각 서비스 Root Directory 설정 (backend/, frontend/)
-- [ ] Railway frontend 서비스 환경변수 설정 (VITE_API_URL, VITE_WS_URL → wss://)
+- [ ] Supabase: PostgreSQL 프로젝트 생성 → DATABASE_URL 확보
+- [ ] Fly.io: 가입 → `fly launch` (backend/) → `fly secrets set DATABASE_URL SECRET_KEY CORS_ORIGINS`
+- [ ] Vercel: GitHub 레포 연결 (Root: frontend/) → VITE_API_URL, VITE_WS_URL 환경변수 설정
+- [ ] GitHub Secrets: FLY_API_TOKEN, VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID 등록
 
 ## [ESG] 구현 9단계: 운영 고려사항
 
-- [ ] Rate limiting — `slowapi` 적용 (`/auth/register`, `/machines/request`)
-- [ ] soft_reserve 재요청 방지 — user당 active reserve 1개 제한
-- [ ] CORS `allow_origins` — Railway 배포 URL로 교체
-- [ ] WS URL — 배포 환경에서 `ws://` → `wss://` 전환
 - [ ] Alembic 마이그레이션 — `create_all()` 대체
 
 ## [ESG] 향후 기능 (프로토타입 이후)

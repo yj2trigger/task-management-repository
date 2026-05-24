@@ -86,3 +86,8 @@
   - .github/workflows/cd.yml — main push 시 테스트 통과 후 Railway 자동 배포
   - CD: 테스트 실패 시 배포 차단 (needs: [test-backend, test-frontend])
   - Railway 서비스 연결은 수동 설정 필요 (RAILWAY_TOKEN 등)
+- [x] 구현 9단계: 운영 고려사항 (2026-05-24)
+  - slowapi rate limiting: /auth/register 5/min, /machines/request 3/min
+  - soft_reserve 재요청 방지: get_active_reserve() + 409 반환
+  - CORS allow_origins: env var화 완료 (8단계에서)
+  - wss:// 전환: VITE_WS_URL env var로 처리 (배포 시 Vercel에서 설정)
