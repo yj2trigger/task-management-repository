@@ -31,6 +31,11 @@
 
 ---
 
+## [ESG] UI 개선
+
+- [ ] GenderSelectPage — 성별에 따라 다른 세탁기 정보가 표시된다는 안내 문구 추가
+- [ ] LoginPage — 비밀번호 입력 필드 표시/숨기기 토글 버튼 추가 (👁 아이콘)
+
 ## [ESG] 버그 수정
 
 - [ ] 대시보드 loading 무한 버그 — `machineStore.setData` + `DashboardPage` 수정 후 브라우저 확인 필요
