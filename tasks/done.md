@@ -41,6 +41,10 @@
 - [x] 1단계: 서비스 정의
 - [x] 2단계: 전체 시스템 아키텍처
 - [x] 3단계: 프론트엔드 구조 설계
+- [x] 4단계: 백엔드 구조 설계
+- [x] 5단계: DB 및 데이터 흐름 설계
+- [x] 6단계: Docker 환경 구성
+- [x] 7단계: Railway 배포 전략
 
 ## [ESG] 구현 완료
 
@@ -51,4 +55,29 @@
   - src/pages/GenderSelectPage.tsx — 남/여 선택 UI
   - src/App.tsx — /gender 라우트, 미선택 시 자동 redirect
   - src/__tests__/authStore.test.ts — 단위 테스트 5개
-  - vite.config.ts — jsdom 환경 추가
+- [x] 구현 3단계: Auth — JWT register/login (2026-05-24)
+  - app/models/user.py, app/core/security.py, app/api/auth.py
+  - app/schemas/auth.py — TokenResponse에 username/gender/role 포함 (프론트 JWT 디코딩 불필요)
+  - 테스트: test_auth.py — 전체 PASS
+- [x] 구현 4단계: Machines + Mode A/B/C (2026-05-24)
+  - app/models/machine.py, app/repositories/machine_repo.py (seed 17대)
+  - app/services/machine_service.py — get_current_mode, get_dashboard
+  - app/api/machines.py — GET /machines, POST /machines/request
+  - 테스트: test_machines.py, test_machine_request.py — 전체 PASS
+- [x] 구현 5단계: SoftReserve + Queue (2026-05-24)
+  - app/models/queue_entry.py, app/repositories/queue_repo.py
+  - app/services/queue_service.py — join, leave
+  - app/api/queue.py — POST /queue/join, DELETE /queue/leave
+  - Lazy expiration: release_expired() — 스케줄러 없이 매 요청 시 처리
+  - 테스트: test_queue.py — 전체 PASS
+- [x] 구현 6단계: WebSocket (2026-05-24)
+  - app/core/ws_manager.py — gender 채널 분리, user_id 타겟 알림
+  - app/api/ws.py — JWT 검증 → 초기 상태 전송 → 30s keepalive loop
+  - src/hooks/useWebSocket.ts — 3s 자동 재연결
+  - src/pages/DashboardPage.tsx — machines_updated / queue_notify 처리
+  - 테스트: test_ws.py — 전체 PASS
+- [x] 구현 7단계: Docker Compose 로컬 실행 (2026-05-24)
+  - main.py lifespan에 machine_repo.seed(db) 추가
+  - .env 생성 (git 제외)
+  - docker compose up --build 동작 확인
+  - 백엔드 26/26 PASS, 프론트엔드 6/6 PASS

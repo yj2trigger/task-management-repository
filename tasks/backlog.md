@@ -31,11 +31,26 @@
 
 ---
 
-## [ESG]
+## [ESG] 버그 수정
 
-- [ ] 4단계: 백엔드 구조 설계
-- [ ] 5단계: DB 및 데이터 흐름 설계
-- [ ] 6단계: Docker 환경 구성
-- [ ] 7단계: Railway 배포 전략
-- [ ] 8단계: CI/CD 자동화
-- [ ] 9단계: 운영 고려사항
+- [ ] 대시보드 loading 무한 버그 — `machineStore.setData` + `DashboardPage` 수정 후 브라우저 확인 필요
+
+## [ESG] 구현 8단계: CI/CD
+
+- [ ] `.github/workflows/ci.yml` 완성 — pytest + vitest 자동 실행
+- [ ] `.github/workflows/cd.yml` 생성 — main 브랜치 push 시 Railway 자동 배포
+
+## [ESG] 구현 9단계: 운영 고려사항
+
+- [ ] Rate limiting — `slowapi` 적용 (`/auth/register`, `/machines/request`)
+- [ ] soft_reserve 재요청 방지 — user당 active reserve 1개 제한
+- [ ] CORS `allow_origins` — Railway 배포 URL로 교체
+- [ ] WS URL — 배포 환경에서 `ws://` → `wss://` 전환
+- [ ] Alembic 마이그레이션 — `create_all()` 대체
+
+## [ESG] 향후 기능 (프로토타입 이후)
+
+- [ ] 카카오 OAuth — 1인 다계정 방지 (`authlib`, `/auth/kakao`, `User.kakao_id`)
+- [ ] 관리자 페이지 — `/admin/machines/{id}` PATCH
+- [ ] PWA Push Notification — 백그라운드 알림
+- [ ] 통계 — `machine_status_logs` 테이블 + 시간대별 혼잡도 API
