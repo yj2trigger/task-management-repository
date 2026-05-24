@@ -48,7 +48,7 @@
 
 ## [ESG] 향후 기능 (프로토타입 이후)
 
-- [ ] 카카오 OAuth — 1인 다계정 방지 (`authlib`, `/auth/kakao`, `User.kakao_id`)
+- [ ] 학교 이메일 인증 — 1인 1계정 (학교 이메일 도메인 검증 + 6자리 코드, User.email, EmailVerification 테이블)
 - [ ] 관리자 페이지 — `/admin/machines/{id}` PATCH
 - [ ] PWA Push Notification — 백그라운드 알림
 - [ ] 통계 — `machine_status_logs` 테이블 + 시간대별 혼잡도 API
