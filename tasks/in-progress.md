@@ -4,7 +4,7 @@
 
 ---
 
-## [ic-pbl] EDK-03 — data_manager.py
+## [ic-pbl] EDK-04 — main.py
 
-- [ ] EDK-03: `medicines.json` / `symptoms.json` 데이터 구조 설계 + `DataManager` 로드 로직
-  - 브랜치: `feature/edk-03-data-manager` → `develop`
+- [ ] EDK-04: `main.py` — 의약품 데이터 초기화 로직으로 교체 (`DataManager` + `DrugController` 연결)
+  - 브랜치: `feature/edk-04-main` → `develop`
