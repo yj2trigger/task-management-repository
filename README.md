@@ -14,8 +14,8 @@
 
 ```
 task-management-repository/
-├── README.md                        ← 이 파일
-├── AI_HANDOVER.md                   ← AI 인계 문서 (필독)
+├── README.md                        ← 이 파일 (인덱스)
+├── AI_HANDOVER.md                   ← AI 인계 문서 (필독) · 운영 원칙 SSOT
 ├── COLLABORATION_RULES.md           ← AI 협업 규칙
 ├── .gitmodules
 │
@@ -23,21 +23,31 @@ task-management-repository/
 │   ├── ic-pbl/                      → yj2trigger/pmg-ic-pbl
 │   └── ESG/                         → yj2trigger/ESG
 │
-├── docs/                            ← 모든 프로젝트 문서 통합 관리
+├── docs/                            ← 모든 프로젝트 문서 통합 관리 (가변)
 │   ├── ic-pbl/
-│   │   ├── CURRENT_STATE.md         ← 진행 상태 (single source of truth)
-│   │   ├── requirements.md
-│   │   ├── scope.md
-│   │   ├── architecture.md
-│   │   ├── gui_architecture.md
+│   │   ├── CURRENT_STATE.md         ← 진행 상태 · 재활용 확정 유닛 SSOT
+│   │   ├── requirements.md          ← 클래스/모듈 재활용 전략 SSOT (§ 2.4)
+│   │   ├── scope.md                 ← 데이터 파일 구성 SSOT (§ 7)
+│   │   ├── architecture.md          ← 목표 파일 구조 SSOT (§ 2)
+│   │   ├── gui_architecture.md      ← 구 계획서 (역사적 참고용)
 │   │   ├── system_flow.md
 │   │   ├── terminology.md
 │   │   └── test_strategy.md
 │   └── ESG/
-│       └── CURRENT_STATE.md         ← 진행 상태 (single source of truth)
+│       ├── CURRENT_STATE.md         ← 진행 상태 · 이슈 이력 SSOT
+│       └── full_plan.md
+│
+├── portfolio/                       ← 완료 프로젝트 회고 (불변)
+│   └── ESG/
+│       ├── README.md
+│       ├── architecture.md          ← API · 파일 구조 · 배포 SSOT
+│       ├── problem_statement.md
+│       ├── security.md
+│       ├── decisions/               ← ADR-001~006
+│       └── postmortems/             ← 사고 상세 분석
 │
 └── tasks/                           ← 전체 태스크 트래킹
-    ├── backlog.md
+    ├── backlog.md                   ← 태스크 목록 SSOT
     ├── in-progress.md
     └── done.md
 ```
@@ -49,15 +59,13 @@ task-management-repository/
 | 프로젝트 | 레포지토리 | 현재 상태 |
 |---------|-----------|---------|
 | ic-pbl (EDK) | [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | 🔵 EDK-01 진행 중 (medicine.py 리팩터링) |
-| ESG | [yj2trigger/ESG](https://github.com/yj2trigger/ESG) | 🔵 구현 2단계 승인 대기 (성별 선택) |
+| ESG | [yj2trigger/ESG](https://github.com/yj2trigger/ESG) | 🟢 핵심 기능 완료 + 운영 중 |
 
 ---
 
 ## 📌 운영 원칙
 
-- **모든 문서는 `docs/`에서만 관리** — 하위 레포의 docs는 업데이트하지 않음
-- **코드 변경은 하위 레포에서, 문서/태스크는 여기서**
-- **단계가 끝날 때마다 `CURRENT_STATE.md`와 `tasks/`를 업데이트**
+→ [AI_HANDOVER.md § 운영 원칙](./AI_HANDOVER.md) 참고
 
 ---
 
