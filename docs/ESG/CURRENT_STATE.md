@@ -1,6 +1,6 @@
 # CURRENT_STATE — ESG (기숙사 세탁기 예약 서비스)
 
-> Last Update: 2026-05-25
+> Last Update: 2026-05-26
 > 원본 레포: [yj2trigger/ESG](https://github.com/yj2trigger/ESG)
 > 전체 설계 문서: [full_plan.md](./full_plan.md)
 > 상세 기술 명세 (API · 파일 구조 · 배포): [portfolio/ESG/architecture.md](../../portfolio/ESG/architecture.md)
@@ -69,6 +69,8 @@
 | 항목 | 내용 |
 |------|------|
 | `in_use` 자동 해제 | 없음 — 어드민 수동 또는 IoT 연동 필요 |
-| IoT 실제 연동 | 엔드포인트 준비 완료, 장치 연결 대기 |
+| IoT 실제 연동 | 엔드포인트 준비 완료, 장치 연결 대기 — [Polling 전략: ADR-007](../../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md) |
+| Tuya API quota | 26,000 호출/월 (무료) — Adaptive polling으로 17,460/월 예상 (quota 67%) — [ADR-007](../../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md) |
+| IoT 확장 | Tuya WiFi 16A (프로토타입) → 30대 초과 또는 간섭 시 Zigbee 전환 예정 |
 | PWA Push Notification | WebSocket 인앱 알림만 — 백그라운드 미지원 |
 | 통계 | `machine_status_logs` 미구현 |
