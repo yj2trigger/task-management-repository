@@ -27,10 +27,8 @@
 - [x] EDK-02: `drug_controller.py` — 증상→의약품 매핑 4메서드 (PR #8)
 - [x] EDK-04: `main.py` — `DrugController` + `DataManager` 초기화로 교체, Coffee/Gummy 제거 (PR #9)
 - [x] EDK-05: `cli_view.py` — 증상 선택 → 의약품 탐색 → 결제 흐름, CLI 실행 가능 (PR #10)
-  - `medicine.py` `calculate_price(selected_options=None)` Cart 호환
-  - `main.py` CLIView 인자 `cart`, `change_reserve` 추가
 
-## [ic-pbl] GUI-EDK 도메인 GUI 전환 (PR #11 제출, 2026-05-26)
+## [ic-pbl] GUI-EDK 도메인 GUI 전환 (PR #11 머지, 2026-05-26)
 
 - [x] GUI-EDK-01: `main_window.py` — `KioskWindow(controller, cart, change_reserve)`, EDK 네비게이션 API
 - [x] GUI-EDK-02: `symptom_select.py` 신규 — 증상 그리드, 응급 빨간색, 장바구니 요약
@@ -39,6 +37,16 @@
 - [x] GUI-EDK-05: `emergency.py` 신규 — 응급 경고 + 119 안내
 - [x] GUI-EDK-06: `admin_menu.py` 재작성 — 의약품 ON/OFF 및 가격, 재료 관련 기능 제거
 - [x] 개편 화면: `idle.py`, `cart.py`, `payment_method.py`, `cash_payment.py`, `admin_auth.py`, `app.py`, `main.py`
+
+## [ic-pbl] 테스트 재작성 (PR #13 제출, 2026-05-26)
+
+- [x] 삭제: `test_product.py`, `test_ingredient.py`, `test_controller.py`, `test_scenarios.py`, `test_cli_integration.py`
+- [x] `conftest.py` 재작성: EDK fixtures (Medicine/Symptom/Cart/ChangeReserve), pygame mock
+- [x] `test_cart.py` 재작성: Medicine 기반, 재고 차감 테스트 제거
+- [x] `test_gui_app.py` 재작성: EDK KioskWindow 시그니처, 화면 전환 검증
+- [x] `test_gui_screens.py` 재작성: SymptomSelect/MedicineList/Detail/Emergency/Cart 등
+- [x] `test_admin_cash.py` 업데이트: subprocess → mock stdin/stdout 직접 호출
+- [x] `test_edk_integration.py` 신규: 증상선택 → 장바구니 → 결제 통합 시나리오
 
 ---
 
