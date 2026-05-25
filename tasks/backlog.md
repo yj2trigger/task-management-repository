@@ -6,7 +6,8 @@
 
 ## [ic-pbl] EDK 도메인 전환 — Core
 
-- [ ] EDK-01: product.py → medicine.py — Medicine 클래스 (Coffee/Gummy 제거, symptom_category 추가)
+> EDK-01은 PR #6 리뷰 중 → `in-progress.md` 참고
+
 - [ ] EDK-02: kiosk_controller.py → drug_controller.py — 증상→의약품 매핑 로직 전환
 - [ ] EDK-03: data_manager.py — medicines.json / symptoms.json 데이터 구조 적용
 - [ ] EDK-04: main.py — 의약품 데이터 초기화 로직으로 교체

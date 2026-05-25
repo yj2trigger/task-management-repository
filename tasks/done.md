@@ -34,6 +34,16 @@
 - [x] gui/screens/admin_auth.py — 관리자 인증
 - [x] gui/screens/admin_menu.py — 관리자 메뉴
 
+## [ic-pbl] CI 인프라 (2026-05-26)
+
+- [x] Gemini PR 자동 리뷰 워크플로 구축 (`gemini-review.yml`)
+  - SHA 기반 immutable diff, 안전한 JSON 구성, 개행 처리
+  - `opened` / `synchronize` / `reopened` 트리거
+  - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+- [x] Gemini 모델: `gemini-2.5-flash` → `gemini-2.0-flash-lite` (지출 한도 초과 대응)
+- [x] `develope` 브랜치 오타 → `develop` 이름 변경
+- [x] 브랜치 전략: `feature/edk-XX` → `develop` → `main`
+
 ---
 
 ## [ESG] 설계 완료
