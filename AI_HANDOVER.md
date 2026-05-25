@@ -12,6 +12,14 @@
 
 ---
 
+## 운영 원칙
+
+- **모든 문서는 `docs/`에서만 관리** — 하위 레포의 docs는 업데이트하지 않음
+- **코드 변경은 하위 레포에서, 문서/태스크는 여기서**
+- **단계가 끝날 때마다 `CURRENT_STATE.md`와 `tasks/`를 업데이트**
+
+---
+
 ## 현재 관리 중인 프로젝트
 
 | 프로젝트 | 레포 | 현재 상태 |
@@ -118,28 +126,4 @@ repos:
 
 ## 문서 구조
 
-```
-task-management-repository/
-├── COLLABORATION_RULES.md   ← AI 협업 규칙 (필독)
-├── AI_HANDOVER.md           ← 이 문서
-├── README.md                ← 레포 개요
-├── .gitmodules
-│
-├── docs/
-│   ├── ic-pbl/              ← ic-pbl 설계 문서 전체
-│   │   ├── CURRENT_STATE.md
-│   │   ├── requirements.md
-│   │   ├── scope.md
-│   │   ├── architecture.md
-│   │   ├── system_flow.md
-│   │   ├── terminology.md
-│   │   ├── test_strategy.md
-│   │   └── gui_architecture.md
-│   └── ESG/
-│       └── CURRENT_STATE.md
-│
-└── tasks/
-    ├── backlog.md
-    ├── in-progress.md
-    └── done.md
-```
+→ [README.md](./README.md) 참고
