@@ -1,0 +1,125 @@
+# ESG 기숙사 세탁기 예약 시스템
+
+한양대학교 기숙사 세탁기 실시간 현황 조회 및 대기열 예약 서비스.
+
+**기간:** 2025년 5월  
+**역할:** 풀스택 단독 개발  
+**상태:** 프로토타입 완성, IoT 연동 예정
+
+---
+
+## 문제 정의
+
+기숙사 세탁기가 사용 가능한지 알려면 직접 세탁실에 가야 한다.  
+모두 사용 중이면 → 허탕, 반복 방문, 세탁실 앞 대기.
+
+→ [상세 문제 정의](problem_statement.md)
+
+---
+
+## 핵심 기능
+
+### 3단계 모드 시스템
+
+| 모드 | 상황 | 동작 |
+|------|------|------|
+| **Mode A** | 여유 (available 多) | 사용자가 층/번호 직접 선택 |
+| **Mode B** | 경쟁 (available 少) | 시스템이 세탁기 자동 배정, 10분 소프트 예약 |
+| **Mode C** | 만원 (available 0) | 대기열 등록 → 빈 세탁기 발생 시 앱 알림 |
+
+### 실시간 업데이트
+
+WebSocket으로 세탁기 상태 변경 즉시 반영 (polling 없음).  
+성별별 채널 분리 (남자/여자 기숙사 구역).
+
+### 이메일 인증
+
+@hanyang.ac.kr 이메일 + 6자리 OTP 인증 → 재학생만 접근 가능.
+
+### 어드민 패널
+
+세탁기 상태 수동 관리, 대기열 알림 트리거.
+
+### IoT 연동 (엔드포인트 준비 완료)
+
+실제 세탁기 센서 → `POST /iot/machines/{id}/status` → 자동 상태 반영.  
+현재: 장치 연결 대기 중. curl/Postman으로 동작 확인 완료.
+
+---
+
+## 기술 스택
+
+```
+Frontend  React 18 + TypeScript + Zustand         → Vercel
+Backend   FastAPI (Python 3.12) + SQLAlchemy       → Fly.io (Docker)
+Database  PostgreSQL                               → Supabase
+실시간    WebSocket (FastAPI native)
+인증      JWT + bcrypt + Gmail SMTP OTP
+```
+
+---
+
+## 아키텍처 결정 기록 (ADR)
+
+| ADR | 결정 | 선택 이유 |
+|-----|------|----------|
+| [ADR-001](decisions/ADR-001-websocket.md) | WebSocket | SSE/폴링 대비 양방향 실시간, 대기열 알림 |
+| [ADR-002](decisions/ADR-002-deployment.md) | Fly.io + Supabase + Vercel | WS 장기 연결 안정성, Railway 탈락 |
+| [ADR-003](decisions/ADR-003-lazy-expiration.md) | Lazy Expiration | Celery/Redis 없이 WS keepalive 재활용 |
+| [ADR-004](decisions/ADR-004-auth-email.md) | Gmail SMTP | Resend 무료 플랜 외부 도메인 발송 불가 |
+| [ADR-005](decisions/ADR-005-iot-design.md) | REST Webhook 선설계 | 장치 없이도 엔드포인트 완성, curl 테스트 가능 |
+
+---
+
+## 사고 기록 (Postmortem)
+
+| 사고 | 원인 | 해결 |
+|------|------|------|
+| [Mode B 배정 결과 즉시 사라짐](postmortems/2025-05-25-mode-b-result-disappear.md) | 모드 변경 → 컴포넌트 언마운트 → 로컬 상태 소멸 | `modeBResult` 부모로 lift up |
+| [Vercel TS 빌드 에러 → 백엔드 배포 차단](postmortems/2025-05-25-vercel-typescript-build.md) | `needs` 의존성으로 프론트 실패 시 백엔드도 차단 | props 타입 수정 (의도된 차단으로 판단) |
+| [모바일 가로 스크롤 오버플로우](postmortems/2025-05-25-mobile-overflow.md) | 고정 픽셀 너비 + `box-sizing` 미설정 | `max-width` + `box-sizing: border-box` |
+
+---
+
+## 상세 문서
+
+- [아키텍처](architecture.md) — 전체 구성, 데이터 모델, WS 이벤트 흐름
+- [보안 설계](security.md) — JWT, OTP, IoT Device Key, CORS
+- [문제 정의](problem_statement.md) — 배경, 사용 시나리오, 제약
+
+---
+
+## 로컬 실행
+
+```bash
+# Backend
+cd project/backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+# Frontend
+cd project/frontend
+npm install
+npm run dev
+```
+
+환경변수: `project/backend/.env.example` 참고.
+
+---
+
+## 배운 것
+
+**React 상태 설계:**  
+"이 상태가 어떤 조건에서 살아있어야 하는가"를 컴포넌트 트리 구조보다 먼저 정의.  
+컴포넌트 언마운트 = 로컬 상태 소멸. 생명주기 초과 필요 시 → 상위로 lift up.
+
+**FastAPI BackgroundTask:**  
+요청 db 세션은 응답 후 닫힘. BackgroundTask에서는 반드시 별도 `SessionLocal()` 사용.
+
+**CD 파이프라인 `needs` 설계:**  
+프론트/백엔드 타입 계약 위반을 빌드타임에 잡는 가장 빠른 방법.  
+단점: 백엔드 단독 hotfix 시 프론트 빌드 실패가 차단.
+
+**IoT 선설계 패턴:**  
+장치 없이 엔드포인트 먼저 설계 → curl로 검증 → 장치 연결 시 URL+Key만 설정.  
+`IOT_DEVICE_KEY` 미설정 시 503 → Graceful degradation.
