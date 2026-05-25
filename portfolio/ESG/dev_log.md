@@ -456,27 +456,409 @@ useEffect(() => { refresh() }, [token])
 
 ---
 
-## 9. 현재 플레이스홀더 / 미구현 목록
+## 9. 플레이스홀더 현황 (최종 업데이트)
 
-| 항목 | 현재 상태 | 이유 | 다음 단계 |
-|------|----------|------|----------|
-| 세탁기 시드 데이터 | 하드코딩 더미 | IoT 미연결 | 관리자 페이지에서 조정 |
-| soft_reserve 재요청 방지 | 없음 | 프로토타입 scope 밖 | user당 active reserve 1개 제한 추가 |
-| WS 알림 지연 | 최대 30초 | lazy expiration | IoT 연결 시 push 방식으로 전환 |
-| 동일 사용자 중복 WS 연결 | 허용 | 단순화 | 재연결 시 이전 연결 해제 처리 |
-| 세탁기 상태 직접 변경 (관리자) | 없음 | 관리자 페이지 미구현 | `/admin/machines/{id}` PATCH |
-| 비밀번호 변경 / 탈퇴 | 없음 | MVP 외 | 나중에 추가 |
-| Rate limiting | 없음 | 프로토타입 | `slowapi` 추가 (설계 9단계에 명시) |
-| Docker lifespan seed | ✅ 완료 | — | — |
-| 계정 중복 가입 악용 | username 중복만 차단 | 프로토타입 scope 밖 | **카카오 OAuth 연동**: `authlib`, `/auth/kakao`, `User.kakao_id` |
-| 대시보드 loading 무한 버그 | ✅ 수정 완료 | `setData`에 `loading:false` 누락 | — |
+| 항목 | 현재 상태 | 비고 |
+|------|----------|------|
+| 세탁기 시드 데이터 | 하드코딩 더미 | IoT 연결 시 관리자 페이지에서 교체 |
+| soft_reserve 재요청 방지 | ✅ 완료 | active reserve 있으면 재배정 차단 |
+| WS 알림 지연 | 최대 30초 | IoT 연결 시 즉시 push 전환 가능 (Section 5-3 참고) |
+| 동일 사용자 중복 WS 연결 | 허용 | 재연결 시 이전 연결 해제 미구현 |
+| 세탁기 상태 직접 변경 (관리자) | ✅ 완료 | `PATCH /admin/machines/{id}` |
+| 비밀번호 변경 | ✅ 완료 | `PATCH /auth/password` |
+| 탈퇴 | 미구현 | MVP 외 |
+| Rate limiting | 미구현 | 프로토타입 단계 유지 |
+| Docker lifespan seed | ✅ 완료 | — |
+| 대시보드 loading 무한 버그 | ✅ 수정 완료 | Section 8 참고 |
+| 이메일 인증 (@hanyang.ac.kr OTP) | ✅ 완료 | Section 15 참고 |
+| 소프트 예약 복원 | ✅ 완료 | `GET /machines/my-reservation` |
+| 대기열 v2 (5분 수락 윈도우) | ✅ 완료 | Section 13 참고 |
+| ConnectionManager 단일 인스턴스 | 잠재적 문제 | Fly.io 1대 유지 중. 다중 서버 시 Redis pub/sub 필요 |
+| IoT 연동 | 엔드포인트 준비 완료 | `POST /iot/machines/{id}/status` — 장치 연결만 남음 |
 
 ---
 
-## 10. 다음 단계 예고 (구현 8단계)
+## 10. 구현 8단계 — CI/CD (GitHub Actions)
 
-CI/CD 구성:
-1. `.github/workflows/ci.yml` 완성 — pytest + vitest 자동 실행
-2. `.github/workflows/cd.yml` 생성 — main 브랜치 push 시 Railway 자동 배포
-3. Railway 프로젝트 연결 + 환경변수 설정
-4. `ws://` → `wss://` (HTTPS 환경), CORS `allow_origins` Railway URL로 교체
+### 10-1. ci.yml vs cd.yml 역할 분리
+
+처음엔 ci.yml 하나에 테스트 + 배포를 모두 넣으려 했으나:
+- PR에서 테스트는 필요하지만 배포는 안 됨
+- push/PR 트리거를 공유하면서 배포 조건만 분기
+
+→ **ci.yml**: 테스트만 (push/PR 공통)  
+→ **cd.yml**: 테스트 + 배포 (main push 시만 deploy job 실행)
+
+```yaml
+# cd.yml — deploy job 조건
+deploy-backend:
+  needs: [test-backend, test-frontend]
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+```
+
+### 10-2. 백엔드 CI — PostgreSQL 없이 pytest
+
+CI 환경에서 Docker PostgreSQL을 띄우면 서비스 정의 + 헬스체크 대기 복잡도 증가.
+→ conftest.py의 SQLite override(Section 1-3)가 CI에도 그대로 적용.
+`python -m pytest tests/ -v`만 실행하면 됨. 별도 DB 서비스 불필요.
+
+### 10-3. 프론트엔드 CI — vitest 환경
+
+초기: `npm test` 명령이 없어서 CI 실패.
+→ `package.json`에 `"test": "vitest run"` 추가. (`vitest` 단독이면 watch 모드 진입 → CI hang)
+
+```json
+"scripts": {
+  "test": "vitest run"
+}
+```
+
+### 10-4. Fly.io 배포 — flyctl deploy 위치
+
+`flyctl deploy`는 `fly.toml`이 있는 디렉토리에서 실행해야 함.
+`fly.toml`이 레포 루트가 아닌 `project/backend/`에 있으면 `--config` 플래그 필요.
+
+**판단**: `fly.toml`을 레포 루트로 이동 → `flyctl deploy --remote-only`만으로 충분.
+
+---
+
+## 11. 배포 전환 — Railway → Fly.io + Supabase + Vercel
+
+### 11-1. Railway 무료 플랜 종료
+
+사전 공지 없이 크레딧 소진 → 서비스 중단. 대안 스택 선정 기준:
+- WebSocket 장기 연결 유지 (cold start 없음)
+- 무료 플랜 존재
+- PostgreSQL 관리형 (직접 운영 부담 없음)
+
+| 역할 | 선택 | 이유 |
+|------|------|------|
+| Backend | Fly.io | cold start 없음, `auto_stop_machines=false` 지원 |
+| DB | Supabase | 관리형 PostgreSQL, 연결 풀 내장, 무료 500MB |
+| Frontend | Vercel | GitHub push → 자동 배포, SPA rewrites 기본 지원 |
+
+### 11-2. Fly.io — auto_stop_machines 설정
+
+WebSocket은 연결이 장시간 유지됨. Fly.io 기본값은 트래픽 없을 시 인스턴스 중지.
+→ `fly.toml`에 `auto_stop_machines = false` 필수.
+
+```toml
+[[services]]
+  auto_stop_machines = false
+  auto_start_machines = true
+```
+
+이 설정 없으면: 클라이언트 WS 연결 중 서버가 내려가 → 1006 disconnect.
+
+### 11-3. Supabase 연결 URL 두 종류
+
+| URL 종류 | 호스트 | IPv | 용도 |
+|---------|--------|-----|------|
+| Direct URL | `db.xxx.supabase.co` | IPv6 only | Fly.io 배포 환경 (Linux) |
+| Session Pooler | `pooler.supabase.com` | IPv4 | 로컬 Windows 개발 + Alembic |
+
+Windows 로컬에서 Direct URL → DNS 해석 실패 (IPv6 미지원 네트워크).
+→ `.env`에 `SESSION_POOLER` 추가. `env.py`와 로컬 실행 시 SESSION_POOLER 우선 사용.
+
+```python
+# alembic/env.py
+database_url = os.environ.get("SESSION_POOLER") or os.environ.get("DATABASE_URL")
+```
+
+### 11-4. Supabase 비밀번호 특수문자 문제
+
+초기 비밀번호에 `@` 포함 → URL에서 `%40`으로 인코딩 필요 → configparser의 `%` 처리와 충돌.
+수동 인코딩 시 오타 발생 가능.
+
+**판단**: Supabase DB 비밀번호를 특수문자 없는 문자열로 리셋 → URL 인코딩 문제 원천 차단.
+
+### 11-5. CORS 업데이트
+
+Railway URL → Vercel URL 변경.
+Fly.io 시크릿 `CORS_ORIGINS`에 Vercel 도메인 등록:
+
+```bash
+fly secrets set CORS_ORIGINS=https://esg-laundry-checker.vercel.app --app esg-laundry-checker
+```
+
+---
+
+## 12. DB 마이그레이션 (Alembic)
+
+### 12-1. alembic.ini `%` interpolation 오류
+
+`alembic.ini`의 `sqlalchemy.url` 값을 configparser가 읽을 때 `%`를 변수 보간 문자로 취급.
+비밀번호에 `%` 없어도 configparser 내부 처리 방식 때문에 이슈 발생 가능.
+
+→ `env.py`에서 `config.set_main_option("sqlalchemy.url", ...)` 사용 않고,
+`create_engine(database_url)`을 직접 호출하여 configparser 우회:
+
+```python
+# env.py
+from dotenv import load_dotenv
+import os
+from sqlalchemy import create_engine
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../../.env"))
+
+database_url = os.environ.get("SESSION_POOLER") or os.environ.get("DATABASE_URL")
+
+def run_migrations_online():
+    connectable = create_engine(database_url)  # alembic.ini sqlalchemy.url 미사용
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+        with context.begin_transaction():
+            context.run_migrations()
+```
+
+### 12-2. TIMESTAMPTZ 마이그레이션 (34bcd027b891)
+
+**배경**: SQLite에서 naive datetime 사용 → 테스트 통과.
+Supabase PostgreSQL에서 `reserved_until < NOW()` 비교 시 naive/aware 혼용 오류 발생 가능.
+
+**마이그레이션 내용**:
+- `machines.reserved_until` → `TIMESTAMP WITH TIME ZONE`
+- `email_verifications.expires_at` → `TIMESTAMP WITH TIME ZONE`
+
+**SQLite 호환성**: `DateTime(timezone=True)`는 SQLite에서 naive로 저장 → 기존 테스트 영향 없음.
+PostgreSQL에서만 실제 timezone 정보 포함.
+
+**적용**:
+```bash
+# project/backend/ 에서
+python -m alembic upgrade head
+# → SESSION_POOLER 통해 Supabase에 직접 적용
+```
+
+### 12-3. Alembic이 SESSION_POOLER를 써야 하는 이유
+
+Alembic은 DDL(ALTER TABLE, CREATE TABLE 등)을 실행 → 트랜잭션 + 장시간 연결 필요.
+Direct URL(IPv6)은 Windows 로컬에서 DNS 해석 실패 → `alembic upgrade head` 실행 불가.
+Session Pooler(IPv4) 사용 시 로컬에서도 마이그레이션 가능.
+
+---
+
+## 13. 대기열 시스템 고도화 (Queue v2 — 5분 수락 윈도우)
+
+초기 구현: `waiting → [삭제]` (offer 발송 즉시 소프트 예약 10분 확정)
+문제: 알림을 받은 사용자가 앱을 안 보고 있으면 세탁기가 10분 점유됨.
+
+### 13-1. 5분 수락 윈도우 도입
+
+```
+waiting
+  └─ offer 발송 → notified (soft_reserve 5분)
+                      ├─ 수락 (POST /queue/accept) → soft_reserve 10분 확정 → entry 삭제
+                      └─ 5분 미수락 (WS keepalive 감지)
+                              → machine available 복귀
+                              → entry status=waiting, created_at=now (대기열 맨 뒤)
+                              → WS queue_offer_expired 발송
+                              → 다음 대기자에게 새 offer
+```
+
+`created_at=now`로 리셋하는 이유: 맨 앞 순서를 독점하며 계속 미수락하는 악용 방지.
+
+### 13-2. QueueEntry 상태 전이 구현
+
+```python
+# queue_repo.reset_expired_notifications()
+expired = db.query(QueueEntry).filter(
+    QueueEntry.status == "notified",
+    QueueEntry.expires_at < datetime.utcnow()
+).all()
+for entry in expired:
+    entry.status = "waiting"
+    entry.created_at = datetime.utcnow()  # 맨 뒤로
+    entry.notified_at = None
+    entry.expires_at = None
+```
+
+### 13-3. GET /queue/status — 상태 통합 응답
+
+페이지 새로고침 시 React state 소멸 → 서버 응답으로 복원 필요.
+
+**문제**: waiting 상태인지 notified 상태인지에 따라 프론트 UI가 다름.
+**판단**: 하나의 endpoint가 두 상태를 모두 커버:
+
+```python
+# waiting 상태
+{"in_queue": True, "queue_position": 2, "total": 5, "is_notified": False}
+
+# notified 상태
+{"in_queue": True, "is_notified": True, "accept_until": "2026-05-26T10:05:00"}
+
+# 대기열 없음
+{"in_queue": False}
+```
+
+`get_entry()`는 status 무관 조회 (waiting/notified 둘 다 반환).
+별도 endpoint 두 개로 분리하면 프론트가 두 번 조회해야 하므로 통합.
+
+### 13-4. WS 이벤트 타입 확장
+
+초기: `machines_updated`만 존재.
+추가된 이벤트:
+
+| 이벤트 | 대상 | 내용 |
+|--------|------|------|
+| `machines_updated` | gender별 브로드캐스트 | 모드 + 층별 현황 |
+| `queue_offer` | 특정 사용자 (1:1) | 배정된 기기 + accept_until |
+| `queue_offer_expired` | 특정 사용자 (1:1) | 5분 미수락 통보 |
+| `queue_position_updated` | gender별 대기자 전체 | 순위 변동 시 |
+
+**send_to_user 구현**: ConnectionManager에 `{user_id: WebSocket}` dict 추가.
+gender별 그룹과 user_id 매핑을 이중 관리.
+
+---
+
+## 14. 소프트 예약 복원 (GET /machines/my-reservation)
+
+### 문제
+
+Mode B 배정 후 사용자가 페이지 새로고침 → "어느 세탁기, 몇 분 남았는지" React state 소멸.
+WebSocket 재연결로 machines_updated는 받아도, 이 사용자에게 배정된 기기 정보는 별도 API 필요.
+
+### 판단
+
+`GET /machines/my-reservation`:
+- 현재 사용자의 active soft_reserve 조회 (`reserved_until > now()`)
+- 반환: `{active: bool, assigned_machine: {...}, reserved_until: "..."}`
+
+DashboardPage 마운트 시 자동 호출 → 카운트다운 UI 복원.
+
+```typescript
+useEffect(() => {
+  getMyReservation(token).then((res) => {
+    if (res.active && res.assigned_machine && res.reserved_until) {
+      setActiveReservation({
+        machine: res.assigned_machine,
+        reserved_until: res.reserved_until,
+      })
+    }
+  })
+}, [token])
+```
+
+---
+
+## 15. 한양대 이메일 인증 (@hanyang.ac.kr + Gmail SMTP OTP)
+
+### 15-1. 도메인 제한 — Pydantic validator
+
+```python
+@field_validator("email")
+def email_must_be_hanyang(cls, v):
+    if not v.endswith("@hanyang.ac.kr"):
+        raise ValueError("한양대학교 이메일(@hanyang.ac.kr)만 가능합니다")
+    return v.lower()
+```
+
+Pydantic validator → 422 자동 반환. API 레이어에서 별도 처리 불필요.
+이메일 소문자 정규화(`lower()`) — 대소문자 혼용 계정 중복 방지.
+
+### 15-2. 회원가입 흐름 변경 (토큰 발급 지연)
+
+기존: `POST /auth/register` → JWT 즉시 반환  
+변경: `POST /auth/register` → OTP 발송 → `{message, email}` 반환 (토큰 없음)  
+　　　`POST /auth/verify-email` → JWT 반환
+
+**이유**: 미인증 계정에 토큰을 주면 is_verified=False 상태로 서비스 이용 가능. 인증 완료까지 발급 지연.
+
+### 15-3. 미인증 계정 로그인 차단
+
+```python
+# auth_service.py — login()
+if not user.is_verified:
+    raise HTTPException(403, "이메일 인증이 필요합니다")
+```
+
+### 15-4. OTP 저장 위치 — User vs EmailVerification 테이블
+
+User 테이블에 OTP 필드를 추가하지 않은 이유:
+- 재발송 시 이전 코드 무효화 → EmailVerification row 교체로 단순화
+- User 모델 책임 분리 (인증 상태 vs 인증 과정)
+- 인증 완료 후 row 삭제 → User 테이블에 불필요한 컬럼 잔류 없음
+
+```python
+class EmailVerification(Base):
+    __tablename__ = "email_verifications"
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), index=True)
+    code = Column(String(6))
+    expires_at = Column(DateTime(timezone=True))
+```
+
+### 15-5. User 모델 — nullable email 설계
+
+기존 계정(email 없음)과의 호환성:
+```python
+email = Column(String(255), unique=True, index=True, nullable=True)
+is_verified = Column(Boolean, default=False)
+```
+`nullable=True` — 기존 계정은 email이 없어도 DB 오류 없음.
+
+### 15-6. 테스트 mock
+
+CI 환경에서 실제 이메일 발송 불필요. monkeypatch로 no-op 대체:
+
+```python
+# conftest.py
+@pytest.fixture(autouse=True)
+def mock_send_email(monkeypatch):
+    monkeypatch.setattr(
+        "app.core.email.send_verification_email",
+        lambda *a, **kw: None
+    )
+```
+
+`autouse=True` — 모든 테스트에 자동 적용. 테스트마다 명시 불필요.
+
+---
+
+## 16. 협업 인프라 구축
+
+### 16-1. develop 브랜치 시도 후 철회
+
+팀원 합류 전 `feature → develop → main` 전략 시도.
+→ 실제 팀 규모(solo + 가끔 합류)에서 PR 오버헤드만 증가.
+→ `feature/xxx → main` 직접 전략으로 단순화. develop 브랜치 삭제.
+
+**브랜치 삭제 순서 주의**: 브랜치 보호가 있는 상태에서 삭제 불가.
+보호 먼저 제거 → 삭제:
+
+```bash
+gh api repos/yj2trigger/ESG/branches/develop/protection --method DELETE
+git push origin --delete develop
+```
+
+### 16-2. 브랜치 보호 — enforce_admins=false
+
+owner(yj2trigger)가 PR 없이 main에 직접 push 가능하도록 설정.
+
+```bash
+gh api repos/yj2trigger/ESG/branches/main/protection \
+  --method PUT \
+  --field enforce_admins=false \
+  --field required_status_checks='{"strict":true,"contexts":["Backend Tests","Frontend Tests"]}' \
+  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
+  --field restrictions=null
+```
+
+→ 서비스 런칭 전까지 main 직접 push 허용. 팀원은 여전히 PR + CI 통과 + 1명 승인 필수.
+
+### 16-3. Datetime Timezone — asUtc() 헬퍼 도입 후 TIMESTAMPTZ로 해결
+
+**초기 증상**: `reserved_until` 값이 JS `new Date()`로 파싱 시 KST(+9h) 오프셋 적용 → 9시간 오차.
+
+**임시 해결 (asUtc 헬퍼)**:
+```typescript
+function asUtc(s: string): Date {
+  return new Date(s.endsWith('Z') || s.includes('+') ? s : s + 'Z')
+}
+```
+백엔드가 timezone 정보 없이 직렬화한 datetime 문자열 끝에 'Z' 강제 추가.
+
+**근본 해결 (Alembic TIMESTAMPTZ 마이그레이션)**:
+`DateTime(timezone=True)` 컬럼은 PostgreSQL에서 UTC로 저장 + ISO 8601(+00:00) 포함 직렬화.
+→ JS `new Date()`가 올바르게 UTC로 파싱. `asUtc()` 헬퍼 불필요.
