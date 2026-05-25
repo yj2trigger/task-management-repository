@@ -93,6 +93,9 @@ Database  PostgreSQL                               → Supabase
 | [모바일 가로 스크롤 오버플로우](postmortems/2025-05-25-mobile-overflow.md) | 고정 픽셀 너비 + `box-sizing` 미설정 | `max-width` + `box-sizing: border-box` |
 | [소프트 예약 배너 즉시 소멸](postmortems/2025-05-26-reservation-banner-invisible.md) | timezone-naive datetime → JS 로컬 해석 → 9시간 차이 → 즉시 만료 | `asUtc()` 헬퍼로 UTC 강제 파싱 |
 | [대기열 notified 상태 새로고침 소멸](postmortems/2025-05-26-queue-notified-status-lost.md) | `/queue/status`가 `waiting`만 조회 → `notified` 사용자 `in_queue=False` 반환 | `get_entry()` 변경 + `is_notified`/`accept_until` 필드 추가 |
+| SQLite naive/aware TypeError (테스트) | `DateTime(timezone=True)` 컬럼도 SQLite는 naive datetime 반환 → UTC 비교 시 TypeError | `if exp.tzinfo is None: exp = exp.replace(tzinfo=timezone.utc)` guard 추가 |
+| Alembic `%` 보간 오류 | `DATABASE_URL`의 `%40`를 configparser가 보간 문법으로 해석 | `config.set_main_option()` 우회, `create_engine()` 직접 사용 |
+| Supabase IPv6 DNS 실패 | Direct Connection URL(`db.xxx.supabase.co`)이 IPv6 전용 → 로컬 네트워크 미지원 | Session Pooler URL(`pooler.supabase.com`)로 전환 |
 
 ---
 
@@ -122,6 +125,21 @@ npm run dev
 
 ---
 
+## 협업 인프라
+
+혼자 개발했지만 팀 확장을 고려해 초기부터 협업 구조를 갖춤.
+
+| 항목 | 내용 |
+|------|------|
+| **브랜치 전략** | `feature/* → develop → main` (GitHub Flow 변형) |
+| **Branch Protection** | main/develop 모두 PR 필수, CI 통과 필수, 관리자 bypass 허용 |
+| **CI** | pytest + vitest — feature PR마다 자동 실행 |
+| **CD** | main push 시에만 Fly.io + Vercel 자동 배포 |
+| **ONBOARDING.md** | 환경 구성, API 명세, WebSocket 이벤트, 브랜치 전략 전체 문서화 |
+| **Alembic** | DB 스키마 변경 이력 관리, Supabase 적용 완료 |
+
+---
+
 ## 배운 것
 
 **React 상태 설계:**  
@@ -134,7 +152,8 @@ npm run dev
 **Datetime timezone 계약:**  
 백엔드-프론트 간 datetime 교환 시 항상 `Z` 또는 `+00:00` 명시 필요.  
 SQLAlchemy `DateTime` vs `DateTime(timezone=True)` 차이를 초기에 결정해야 함.  
-JS `new Date("...")` 는 timezone 없으면 로컬 시간으로 해석 → 서버 UTC와 최대 ±12시간 차이.
+JS `new Date("...")` 는 timezone 없으면 로컬 시간으로 해석 → 서버 UTC와 최대 ±12시간 차이.  
+테스트 DB(SQLite)와 프로덕션 DB(PostgreSQL)의 timezone 처리 방식 차이 → naive/aware guard 필수.
 
 **IoT 선설계 패턴:**  
 장치 없이 엔드포인트 먼저 설계 → curl로 검증 → 장치 연결 시 URL+Key만 설정.  
@@ -147,3 +166,8 @@ React state는 새로고침 시 소멸 → 서버 API로 복원 (`GET /machines/
 **엔티티 상태 추가 시 3-step 체크리스트:**  
 ① status API에 새 상태 노출 ② 마운트 시 복원 경로 구현 ③ 상태별 UI 분기 확인.  
 notified 상태 구현 시 복원 누락 → 수락 배너 사라짐, 등록 버튼 잘못 표시.
+
+**DB 마이그레이션 설계:**  
+`create_all()`은 테이블 생성만, 컬럼 변경은 추적 불가 → Alembic 필수.  
+URL 특수문자(`%40`)와 configparser 보간 충돌 — URL은 환경변수로만 관리, ini에 직접 쓰지 않는다.  
+Supabase는 Direct URL(IPv6 전용)과 Session Pooler URL(IPv4 지원) 두 개 제공, 로컬 개발에서는 Pooler 사용.

@@ -88,3 +88,14 @@
 - [x] Mode C 대기 중 모드 전환 시 대기 상태 소멸 — queueInfo 상위 상태로 올림
 - [x] 대기 중 Mode B/A 뷰 동시 표시 — queueInfo 있으면 Mode B/A 뷰 숨김
 - [x] 어드민 available 전환 시 큐 알림 미발송 — _notify_queue_and_broadcast 연결
+
+## [ESG] 기술부채 해결 + 협업 인프라 (2026-05-25)
+
+- [x] 기술부채 #1: `datetime.utcnow()` deprecated → `datetime.now(timezone.utc)` 전환
+- [x] 기술부채 #2: `DateTime` → `DateTime(timezone=True)` (machines, email_verifications)
+- [x] 기술부채 #3: Alembic 마이그레이션 도입 — env.py 작성 + 첫 revision 생성 + Supabase 적용
+- [x] pytest 커버리지 확장 — 32 → 42 cases (queue status/accept, machine duplicate/my-reservation)
+- [x] GitHub 협업 설정 — branch protection (main/develop), PR 템플릿, ONBOARDING.md
+- [x] CI workflow: `develope` 오타 수정 → `develop`, PR 트리거 추가
+- [x] CD workflow: develop PR 시 테스트만 실행, deploy는 main push 한정
+- [x] 브랜치 전략 수립 — develop 브랜치 생성, feature → develop → main 흐름
