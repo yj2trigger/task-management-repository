@@ -35,10 +35,14 @@
     +
 ┌─────────────────────────────────────────────────────┐
 │              IoT 장치 (예정)                          │
+│   Tuya Wi-Fi 16A 스마트 플러그 (프로토타입)            │
 │   HTTP POST /iot/machines/{id}/status               │
 │   X-Device-Key 헤더 인증                             │
 └─────────────────────────────────────────────────────┘
 ```
+
+**IoT Polling 전략:** [ADR-007 — Adaptive Polling](decisions/ADR-007-iot-polling-strategy.md)
+(하드웨어 로드맵 · Tuya quota 정량 분석 · 하이브리드 알고리즘 · 포트폴리오 기록 요소)
 
 ---
 
