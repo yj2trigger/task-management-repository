@@ -10,8 +10,24 @@
 ```
 
 - `sub` 클레임에 username 저장
+- 만료: 7일 (`access_token_expire_minutes=10080`)
 - username 변경 시 → 새 토큰 재발급 (기존 토큰 즉시 무효화 아님 — 7일 만료 대기)
 - 토큰 저장: 프론트엔드 `localStorage` (SPA 특성상 httpOnly 쿠키 대신)
+
+### 401 자동 로그아웃
+
+```typescript
+// api/client.ts — 공통 authFetch
+if (res.status === 401) {
+  useAuthStore.getState().logout()  // Zustand store 초기화
+  throw new Error('로그인이 만료되었습니다. 다시 로그인해주세요.')
+  // → user=null → route guard → 로그인 화면으로 자동 이동
+}
+```
+
+모든 인증 API 호출(`machines`, `queue`, `admin`, `auth`)에 적용.  
+이전: 60분 만료 + 401 핸들링 없음 → 토큰 만료 후 에러 메시지만 표시.  
+변경: 7일 만료 + 401 시 자동 로그아웃.
 
 ### 역할 분리 (RBAC)
 

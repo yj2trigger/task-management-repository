@@ -25,12 +25,24 @@
 |------|------|------|
 | **Mode A** | 여유 (available 多) | 사용자가 층/번호 직접 선택 |
 | **Mode B** | 경쟁 (available 少) | 시스템이 세탁기 자동 배정, 10분 소프트 예약 |
-| **Mode C** | 만원 (available 0) | 대기열 등록 → 빈 세탁기 발생 시 앱 알림 |
+| **Mode C** | 만원 (available 0) | 대기열 등록 → 빈 세탁기 발생 시 **5분 수락 대기** → 수락 시 10분 소프트 예약 |
+
+### 5분 수락 대기 (Mode C)
+
+세탁기가 비면 즉시 배정이 아닌 **수락 요청**을 전송.  
+- 5분 이내 수락 → 10분 소프트 예약 확정  
+- 미수락 → 대기열 맨 뒤로 이동, 다음 대기자에게 offer  
+- 이유: 알림을 놓친 사용자에게 10분을 낭비하지 않도록
 
 ### 실시간 업데이트
 
 WebSocket으로 세탁기 상태 변경 즉시 반영 (polling 없음).  
 성별별 채널 분리 (남자/여자 기숙사 구역).
+
+### 소프트 예약 복원
+
+페이지 새로고침 후에도 `GET /machines/my-reservation`으로 활성 예약을 복원.  
+예약 유효 시간 카운트다운 10분 내내 화면에 표시.
 
 ### 이메일 인증
 
@@ -54,7 +66,7 @@ Frontend  React 18 + TypeScript + Zustand         → Vercel
 Backend   FastAPI (Python 3.12) + SQLAlchemy       → Fly.io (Docker)
 Database  PostgreSQL                               → Supabase
 실시간    WebSocket (FastAPI native)
-인증      JWT + bcrypt + Gmail SMTP OTP
+인증      JWT (7일) + bcrypt + Gmail SMTP OTP
 ```
 
 ---
@@ -68,6 +80,7 @@ Database  PostgreSQL                               → Supabase
 | [ADR-003](decisions/ADR-003-lazy-expiration.md) | Lazy Expiration | Celery/Redis 없이 WS keepalive 재활용 |
 | [ADR-004](decisions/ADR-004-auth-email.md) | Gmail SMTP | Resend 무료 플랜 외부 도메인 발송 불가 |
 | [ADR-005](decisions/ADR-005-iot-design.md) | REST Webhook 선설계 | 장치 없이도 엔드포인트 완성, curl 테스트 가능 |
+| [ADR-006](decisions/ADR-006-queue-acceptance-window.md) | 5분 수락 대기 | 즉시 배정 시 알림 놓친 사용자 10분 낭비 방지 |
 
 ---
 
@@ -78,6 +91,7 @@ Database  PostgreSQL                               → Supabase
 | [Mode B 배정 결과 즉시 사라짐](postmortems/2025-05-25-mode-b-result-disappear.md) | 모드 변경 → 컴포넌트 언마운트 → 로컬 상태 소멸 | `modeBResult` 부모로 lift up |
 | [Vercel TS 빌드 에러 → 백엔드 배포 차단](postmortems/2025-05-25-vercel-typescript-build.md) | `needs` 의존성으로 프론트 실패 시 백엔드도 차단 | props 타입 수정 (의도된 차단으로 판단) |
 | [모바일 가로 스크롤 오버플로우](postmortems/2025-05-25-mobile-overflow.md) | 고정 픽셀 너비 + `box-sizing` 미설정 | `max-width` + `box-sizing: border-box` |
+| [소프트 예약 배너 즉시 소멸](postmortems/2025-05-26-reservation-banner-invisible.md) | timezone-naive datetime → JS 로컬 해석 → 9시간 차이 → 즉시 만료 | `asUtc()` 헬퍼로 UTC 강제 파싱 |
 
 ---
 
@@ -116,10 +130,15 @@ npm run dev
 **FastAPI BackgroundTask:**  
 요청 db 세션은 응답 후 닫힘. BackgroundTask에서는 반드시 별도 `SessionLocal()` 사용.
 
-**CD 파이프라인 `needs` 설계:**  
-프론트/백엔드 타입 계약 위반을 빌드타임에 잡는 가장 빠른 방법.  
-단점: 백엔드 단독 hotfix 시 프론트 빌드 실패가 차단.
+**Datetime timezone 계약:**  
+백엔드-프론트 간 datetime 교환 시 항상 `Z` 또는 `+00:00` 명시 필요.  
+SQLAlchemy `DateTime` vs `DateTime(timezone=True)` 차이를 초기에 결정해야 함.  
+JS `new Date("...")` 는 timezone 없으면 로컬 시간으로 해석 → 서버 UTC와 최대 ±12시간 차이.
 
 **IoT 선설계 패턴:**  
 장치 없이 엔드포인트 먼저 설계 → curl로 검증 → 장치 연결 시 URL+Key만 설정.  
 `IOT_DEVICE_KEY` 미설정 시 503 → Graceful degradation.
+
+**상태 복원 패턴:**  
+React state는 새로고침 시 소멸 → 서버 API로 복원 (`GET /machines/my-reservation`).  
+"이 상태가 새로고침 후에도 살아있어야 하는가" 를 설계 시 고려.
