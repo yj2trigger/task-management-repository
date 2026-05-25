@@ -2,6 +2,7 @@
 
 > Last Update: 2026-05-25
 > 원본 레포: [yj2trigger/ESG](https://github.com/yj2trigger/ESG)
+> 전체 설계 문서: [full_plan.md](./full_plan.md)
 
 ---
 
@@ -49,6 +50,9 @@
 | 10. 이메일 인증 (@hanyang.ac.kr + 6자리 OTP) | ✅ | ✅ |
 | 11. 대기 순번 실시간 표시 (WS queue_position_updated) | ✅ | ✅ |
 | 12. 모바일 PWA (standalone + Fullscreen API) | — | ✅ |
+| 13. 관리자 페이지 (세탁기 상태 변경) | ✅ | ✅ |
+| 14. 비밀번호 / 아이디 변경 (설정 페이지) | ✅ | ✅ |
+| 15. IoT 신호 수신 엔드포인트 | ✅ | — |
 
 ---
 
@@ -62,67 +66,94 @@
 
 ---
 
-## 알려진 이슈
+## API 엔드포인트 전체 목록
 
-| 이슈 | 현상 | 상태 |
-|------|------|------|
-| 대시보드 로딩 무한 | WS machines_updated마다 loading=true → 화면 깜박임 | ✅ 수정 완료 |
-| Resend 무료 플랜 제한 | 외부 도메인 발송 불가 | ✅ Gmail SMTP로 전환 완료 |
-| Vercel URL 경로 이중 적용 | cd.yml working-directory 충돌 | ✅ working-directory 제거로 해결 |
+| Method | Path | 설명 | 인증 |
+|--------|------|------|------|
+| POST | `/auth/register` | 회원가입 (@hanyang.ac.kr 필수) | 불필요 |
+| POST | `/auth/verify-email` | OTP 인증 → JWT 반환 | 불필요 |
+| POST | `/auth/login` | 로그인 → JWT 반환 | 불필요 |
+| PATCH | `/auth/password` | 비밀번호 변경 (현재 비번 검증) | 필요 |
+| PATCH | `/auth/username` | 아이디 변경 → 새 JWT 반환 | 필요 |
+| GET | `/machines` | 현재 모드 + 층별 상태 | 필요 |
+| POST | `/machines/request` | Mode B: 세탁기 1대 배정 | 필요 |
+| POST | `/queue/join` | Mode C: 대기열 등록 | 필요 |
+| DELETE | `/queue/leave` | 대기열 취소 | 필요 |
+| GET | `/queue/status` | 대기 상태 조회 (새로고침 복원용) | 필요 |
+| GET | `/admin/machines` | 전체 세탁기 목록 | admin |
+| PATCH | `/admin/machines/{id}` | 세탁기 상태 변경 + 큐 알림 트리거 | admin |
+| POST | `/iot/machines/{id}/status` | IoT 신호 수신 (`is_running` bool) | Device Key |
+| WS | `/ws` | 실시간 연결 | JWT 쿼리 파라미터 |
 
 ---
 
-## 현재 백엔드 파일 구조
+## 백엔드 파일 구조
 
 | 파일 | 내용 |
 |------|------|
 | `app/models/user.py` | User ORM (id, username, password_hash, gender, role, email, is_verified) |
 | `app/models/machine.py` | Machine ORM (floor, machine_number, status, gender_restriction, soft_reserve 필드) |
-| `app/models/queue_entry.py` | QueueEntry ORM (user_id, gender, status, created_at, notified_at, expires_at) |
+| `app/models/queue_entry.py` | QueueEntry ORM (user_id, gender, status, created_at) |
 | `app/models/email_verification.py` | EmailVerification ORM (email, code, expires_at) |
 | `app/core/security.py` | bcrypt 해싱, JWT 생성/검증 |
-| `app/core/dependencies.py` | HTTPBearer → get_current_user |
+| `app/core/dependencies.py` | get_current_user, get_admin_user (role 체크) |
 | `app/core/ws_manager.py` | ConnectionManager 싱글톤, gender 채널 분리, user_id 타겟 알림 |
 | `app/core/email.py` | Gmail SMTP — send_verification_email() |
-| `app/repositories/machine_repo.py` | count_available, soft_reserve, release_expired(lazy), seed(17대) |
+| `app/repositories/machine_repo.py` | count_available, soft_reserve, release_expired(lazy), get_by_id, set_status, seed(17대) |
 | `app/repositories/queue_repo.py` | join, leave, get_position, get_next_waiter, get_all_waiting, count_waiting |
-| `app/api/ws.py` | JWT 검증 → 초기 상태 전송 → 30s keepalive loop + broadcast_queue_positions |
-| `app/api/auth.py` | POST /auth/register, /auth/verify-email, /auth/login |
-| `app/api/queue.py` | POST /queue/join, DELETE /queue/leave |
+| `app/api/ws.py` | JWT 검증 → 초기 상태 전송 → 30s keepalive + _notify_queue_and_broadcast, broadcast_queue_positions |
+| `app/api/auth.py` | register, verify-email, login, PATCH password, PATCH username |
+| `app/api/machines.py` | GET /machines, POST /machines/request |
+| `app/api/queue.py` | POST /queue/join, DELETE /queue/leave, GET /queue/status |
+| `app/api/admin.py` | GET /admin/machines, PATCH /admin/machines/{id} (available 시 큐 알림 연동) |
+| `app/api/iot.py` | POST /iot/machines/{id}/status (X-Device-Key 인증) |
 
 ---
 
-## 현재 프론트엔드 파일
+## 프론트엔드 파일
 
 | 파일 | 내용 |
 |------|------|
-| `src/api/auth.ts` | register(+email), login, verifyEmail |
+| `src/api/auth.ts` | register, login, verifyEmail, changePassword, changeUsername |
 | `src/api/machines.ts` | getMachines, requestMachine |
-| `src/api/queue.ts` | joinQueue, leaveQueue (응답에 total 포함) |
-| `src/hooks/useWebSocket.ts` | 3s 자동 재연결 |
+| `src/api/queue.ts` | joinQueue, leaveQueue, getQueueStatus |
+| `src/api/admin.ts` | adminGetMachines, adminSetStatus |
+| `src/hooks/useWebSocket.ts` | 3s 자동 재연결, WsMessage 타입 (machines_updated / queue_notify / queue_position_updated) |
 | `src/pages/GenderSelectPage.tsx` | 성별 선택 + 구역 안내 문구 |
 | `src/pages/LoginPage.tsx` | 로그인/회원가입 탭 전환 + 비밀번호 표시 토글 |
 | `src/pages/VerifyEmailPage.tsx` | 6자리 코드 입력 → 인증 완료 |
-| `src/pages/DashboardPage.tsx` | Mode A/B/C, 대기열 순번 실시간, queue_notify 배너 |
+| `src/pages/DashboardPage.tsx` | Mode A/B/C, modeBResult/queueInfo 상위 상태 관리, 실시간 순번, 설정 버튼 |
+| `src/pages/SettingsPage.tsx` | 비밀번호/아이디 변경 토글 폼, 로그아웃 |
+| `src/pages/AdminPage.tsx` | 층별 기기 상태 토글 (admin role 필요) |
+| `src/store/authStore.ts` | Zustand (user, gender, setUser, logout) + localStorage persist |
 | `src/store/machineStore.ts` | Zustand (data, loading, error) |
 | `public/manifest.json` | PWA manifest (display: standalone) |
 
 ---
 
-## 플레이스홀더 (미구현, 계획됨)
+## 알려진 이슈 / 해결된 버그
 
-| 항목 | 내용 |
+| 이슈 | 상태 |
 |------|------|
-| Alembic 마이그레이션 | `create_all()` 대체 — 스키마 변경 이력 관리 |
-| 관리자 페이지 | `/admin/machines/{id}` PATCH — 세탁기 상태 직접 변경 |
-| PWA Push Notification | WebSocket 인앱 알림 → 백그라운드 알림 전환 |
-| IoT 연동 | LG 세탁기 실제 상태 연동 (현재 더미데이터) |
-| 통계 | `machine_status_logs` 테이블 + 시간대별 혼잡도 API |
+| 대시보드 로딩 무한 (WS 업데이트마다 깜박임) | ✅ 수정 — data 있으면 loading 화면 미표시 |
+| Resend 무료 플랜 외부 도메인 발송 불가 | ✅ Gmail SMTP 전환 |
+| Vercel working-directory 이중 적용 | ✅ 제거로 해결 |
+| WsMessage TypeScript 타입 누락 (queue_position_updated) | ✅ 수정 |
+| 모바일 horizontal overflow | ✅ boxSizing: border-box 적용 |
+| Mode B 배정 후 결과 즉시 사라짐 | ✅ modeBResult 상위 상태로 올림 |
+| Mode C 대기 중 모드 B 전환 시 대기 상태 소멸 | ✅ queueInfo 상위 상태로 올림 |
+| Mode B/C 뷰 동시 표시 (대기 중 + 사용 버튼) | ✅ queueInfo 있으면 Mode B/A 뷰 숨김 |
+| 어드민 available 전환 시 큐 알림 미발송 | ✅ _notify_queue_and_broadcast 연결 |
+| React StrictMode WS 1006 disconnect | 미해결 (두 번째 연결 정상 동작) |
 
 ---
 
-## 🚨 현재 리스크
+## 알려진 제약 / 향후 과제
 
-- IoT(LG 세탁기) 연동 방식 미확정 → 더미데이터로 우선 진행
-- React StrictMode + WS 1006 disconnect: StrictMode 이중 마운트로 첫 WS 즉시 종료됨 (두 번째 연결은 정상)
-- Supabase DB 스키마 변경 시 `create_all()`로는 ALTER 불가 → 수동 SQL 필요 (Alembic 미도입)
+| 항목 | 내용 |
+|------|------|
+| `in_use` 자동 해제 | 없음 — 어드민 수동 또는 IoT 연동 필요 |
+| IoT 실제 연동 | 엔드포인트 준비 완료, 장치 연결 대기 |
+| Alembic 마이그레이션 | `create_all()` 사용 중 — 스키마 변경 이력 없음 |
+| PWA Push Notification | WebSocket 인앱 알림만 — 백그라운드 미지원 |
+| 통계 | `machine_status_logs` 미구현 |

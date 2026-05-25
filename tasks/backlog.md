@@ -35,9 +35,9 @@
 ## [ESG] 운영 개선
 
 - [ ] Alembic 마이그레이션 — `create_all()` 대체 (스키마 변경 이력 관리)
+- [ ] IoT 실제 연동 — 엔드포인트 준비 완료, 장치 연결 및 `IOT_DEVICE_KEY` 설정 필요
 
 ## [ESG] 향후 기능 (프로토타입 이후)
 
-- [ ] 관리자 페이지 — `/admin/machines/{id}` PATCH
-- [ ] PWA Push Notification — 백그라운드 알림
+- [ ] PWA Push Notification — 백그라운드 알림 (현재 인앱 WS만)
 - [ ] 통계 — `machine_status_logs` 테이블 + 시간대별 혼잡도 API

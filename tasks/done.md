@@ -50,66 +50,41 @@
 
 - [x] 구현 1단계: 프로젝트 골격 + Docker (2026-05-23)
 - [x] 구현 2단계: 성별 선택 UI (2026-05-24)
-  - src/types/user.ts — Gender 타입
-  - src/store/authStore.ts — Zustand + localStorage persist
-  - src/pages/GenderSelectPage.tsx — 남/여 선택 UI + 구역 안내 문구
-  - src/App.tsx — /gender 라우트, 미선택 시 자동 redirect
 - [x] 구현 3단계: Auth — JWT register/login (2026-05-24)
-  - app/models/user.py, app/core/security.py, app/api/auth.py
-  - app/schemas/auth.py — TokenResponse에 username/gender/role 포함
-  - 테스트: test_auth.py — 전체 PASS
 - [x] 구현 4단계: Machines + Mode A/B/C (2026-05-24)
-  - app/models/machine.py, app/repositories/machine_repo.py (seed 17대)
-  - app/services/machine_service.py — get_current_mode, get_dashboard
-  - app/api/machines.py — GET /machines, POST /machines/request
-  - 테스트: test_machines.py, test_machine_request.py — 전체 PASS
 - [x] 구현 5단계: SoftReserve + Queue (2026-05-24)
-  - app/models/queue_entry.py, app/repositories/queue_repo.py
-  - app/services/queue_service.py — join, leave
-  - app/api/queue.py — POST /queue/join, DELETE /queue/leave
-  - Lazy expiration: release_expired() — 스케줄러 없이 매 요청 시 처리
-  - 테스트: test_queue.py — 전체 PASS
 - [x] 구현 6단계: WebSocket (2026-05-24)
-  - app/core/ws_manager.py — gender 채널 분리, user_id 타겟 알림
-  - app/api/ws.py — JWT 검증 → 초기 상태 전송 → 30s keepalive loop
-  - src/hooks/useWebSocket.ts — 3s 자동 재연결
-  - src/pages/DashboardPage.tsx — machines_updated / queue_notify 처리
-  - 테스트: test_ws.py — 전체 PASS
 - [x] 구현 7단계: Docker Compose 로컬 실행 (2026-05-24)
-  - main.py lifespan에 machine_repo.seed(db) 추가
-  - .env 생성 (git 제외)
-  - docker compose up --build 동작 확인
-- [x] 구현 8단계: CI/CD (2026-05-24~25)
-  - .github/workflows/ci.yml — push/PR 시 pytest + vitest 자동 실행 (main, develope 브랜치)
-  - .github/workflows/cd.yml — main push 시 Fly.io + Vercel 자동 배포
-  - Fly.io: `flyctl deploy --remote-only`, fly.toml 루트 위치
-  - Vercel: vercel.json SPA rewrites, working-directory 제거로 경로 이중 적용 방지
-  - Fly.io Secrets: DATABASE_URL(Supabase), SECRET_KEY, CORS_ORIGINS, GMAIL_USER, GMAIL_APP_PASSWORD
-  - Vercel Env: VITE_API_URL, VITE_WS_URL
-- [x] 구현 9단계: 운영 고려사항 (2026-05-24)
-  - slowapi rate limiting: /auth/register 5/min, /machines/request 3/min
-  - soft_reserve 재요청 방지: get_active_reserve() + 409 반환
-  - CORS allow_origins: env var화
-- [x] 구현 10단계: 이메일 인증 (2026-05-25)
-  - @hanyang.ac.kr 도메인 제한 + 6자리 OTP (10분 만료)
-  - Gmail SMTP 발송 (Resend 무료 플랜 외부 도메인 불가로 전환)
-  - app/models/email_verification.py, app/core/email.py
-  - src/pages/VerifyEmailPage.tsx
-  - 테스트: test_auth.py 32/32 PASS
+- [x] 구현 8단계: CI/CD — GitHub Actions → Fly.io + Vercel (2026-05-24~25)
+- [x] 구현 9단계: 운영 고려사항 — rate limit, soft_reserve 중복 방지 (2026-05-24)
+- [x] 구현 10단계: 이메일 인증 — @hanyang.ac.kr + 6자리 OTP + Gmail SMTP (2026-05-25)
 
 ## [ESG] 기능 추가 (2026-05-25)
 
-- [x] 대기 순번 실시간 표시
-  - WS queue_position_updated 이벤트 (누군가 취소/알림받을 때 전원 갱신)
-  - QueueJoinResponse에 total 필드 추가
-  - DashboardPage: 현재 N번째 / 전체 M명 표시
-- [x] 모바일 PWA (standalone 모드)
-  - public/manifest.json (display: standalone, theme_color: #333)
-  - index.html: manifest link + iOS/Android 메타 태그
-  - App.tsx: 첫 터치 시 Fullscreen API 요청
+- [x] 대기 순번 실시간 표시 — WS queue_position_updated 이벤트
+- [x] 모바일 PWA — standalone manifest + Fullscreen API
+- [x] 관리자 페이지 — 층별 세탁기 상태 토글 (role=admin 필요)
+  - `GET /admin/machines`, `PATCH /admin/machines/{id}`
+  - `get_admin_user` dependency (403 for non-admin)
+  - `AdminPage.tsx` — 층별 기기 목록 + 상태 변경 버튼
+- [x] 비밀번호 / 아이디 변경 (설정 페이지)
+  - `PATCH /auth/password` — 현재 비번 검증 후 해시 교체
+  - `PATCH /auth/username` — 현재 비번 검증 + 중복 확인 → 새 JWT 발급
+  - `SettingsPage.tsx` — 버튼 클릭 시 폼 토글, 로그아웃 버튼 포함
+- [x] IoT 신호 수신 엔드포인트
+  - `POST /iot/machines/{id}/status` — X-Device-Key 헤더 인증
+  - `is_running: false` → available + 대기열 알림 트리거
+  - `IOT_DEVICE_KEY` 환경변수 미설정 시 503
 
 ## [ESG] 버그/UI 수정 (2026-05-25)
 
-- [x] 대시보드 loading 무한 버그 수정 — data 있을 때는 loading/error 화면으로 교체하지 않음
-- [x] GenderSelectPage — 성별에 따라 다른 구역 세탁기 안내 문구 추가
-- [x] LoginPage — 비밀번호 표시/숨기기 토글 버튼 (👁/🙈)
+- [x] 대시보드 loading 무한 버그 — data 있을 때 loading/error 화면 교체 안 함
+- [x] GenderSelectPage — 성별별 구역 안내 문구
+- [x] LoginPage — 비밀번호 표시 토글
+- [x] WsMessage TypeScript 타입 누락 (queue_position_updated, position, total)
+- [x] 모바일 horizontal overflow — main에 boxSizing: border-box
+- [x] 대기열 상태 복원 — GET /queue/status + useEffect on mount
+- [x] Mode B 배정 결과 즉시 사라짐 — modeBResult 상위 상태로 올림
+- [x] Mode C 대기 중 모드 전환 시 대기 상태 소멸 — queueInfo 상위 상태로 올림
+- [x] 대기 중 Mode B/A 뷰 동시 표시 — queueInfo 있으면 Mode B/A 뷰 숨김
+- [x] 어드민 available 전환 시 큐 알림 미발송 — _notify_queue_and_broadcast 연결
