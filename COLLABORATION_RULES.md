@@ -72,7 +72,46 @@ npm run test
 - `ci.yml`은 레포에 미리 작성해 두되, 현재는 수동 실행(`workflow_dispatch`)으로만 트리거
 - 팀 협업 또는 실배포 단계 전환 시 `pull_request` 트리거로 변경
 
-### 5. 레포지토리 접근 권한
+### 5. 브랜치 & 이슈 워크플로우 (ESG 레포)
+
+#### 브랜치 전략
+
+```
+main          → 프로덕션 (owner는 직접 push 가능, 팀원은 PR 필수)
+feature/xxx   → 기능 개발
+issue/xxx     → 버그 수정
+```
+
+#### feature 브랜치
+
+```bash
+git checkout -b feature/기능명    # main에서 분기
+# 작업 후
+git push origin feature/기능명
+# GitHub에서 PR 생성 → main으로
+```
+
+#### 이슈 & 버그 수정
+
+1. GitHub Issues에 버그/개선 사항 등록
+2. `issue/이슈번호-간단설명` 브랜치 생성
+3. 수정 후 PR → main
+4. PR 설명에 `Closes #이슈번호` 기재 (merge 시 이슈 자동 닫힘)
+
+```bash
+git checkout -b issue/42-fix-queue-notified
+# 수정 후
+git push origin issue/42-fix-queue-notified
+# PR 본문에: Closes #42
+```
+
+#### PR 조건 (팀원)
+
+- CI 통과 필수 (Backend Tests + Frontend Tests)
+- 1명 승인 필수
+- owner는 bypass 가능
+
+### 6. 레포지토리 접근 권한
 
 #### 쓰기 가능 (read + write)
 
