@@ -32,9 +32,18 @@
 
 ---
 
+## [ESG] IoT 구현
+
+> 설계 상세: [ADR-007 — Adaptive Polling 전략](../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md)
+
+- [ ] IoT-01: Tuya WiFi 플러그 실제 연동 — IOT_DEVICE_KEY 설정 + 장치 페어링
+- [ ] IoT-02: Adaptive polling 구현 — Batch API + Mode별 interval + 심야 감소 (ADR-007 하이브리드)
+- [ ] IoT-03: Admin 패널 — polling 통계 섹션 추가 (현재 interval · 각 요소 기여 · 월 API 사용량)
+- [ ] IoT-04: 사용자 화면 — 현재 polling 빈도 공개 (DashboardPage 하단)
+- [ ] IoT-05: Phase 2 — 4주 데이터 수집 후 요일×시간대 통계 기반 interval 자동 조절
+
 ## [ESG] 운영 개선
 
-- [ ] IoT 실제 연동 — 엔드포인트 준비 완료, 장치 연결 및 `IOT_DEVICE_KEY` 설정 필요
 - [ ] 기술부채 #4: `ConnectionManager` 단일 인스턴스 — 다중 서버 인스턴스 시 WS 브로드캐스트 누락 (현재 Fly.io 1대라 잠재적 문제)
 
 ## [ESG] 향후 기능 (프로토타입 이후)
