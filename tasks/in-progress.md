@@ -4,12 +4,6 @@
 
 ---
 
-## [ic-pbl] EDK 도메인 전환
+현재 진행 중인 태스크 없음.
 
-- [ ] EDK-01: product.py → medicine.py — Medicine 클래스 리팩터링 (Coffee/Gummy 제거)
-
----
-
-## [ESG]
-
-구현 3단계 (세탁기 상태 조회 — Mode A/B/C) 대기 중
+다음 작업 대상: `backlog.md` 참고

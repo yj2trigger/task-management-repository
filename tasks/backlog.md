@@ -6,6 +6,7 @@
 
 ## [ic-pbl] EDK 도메인 전환 — Core
 
+- [ ] EDK-01: product.py → medicine.py — Medicine 클래스 (Coffee/Gummy 제거, symptom_category 추가)
 - [ ] EDK-02: kiosk_controller.py → drug_controller.py — 증상→의약품 매핑 로직 전환
 - [ ] EDK-03: data_manager.py — medicines.json / symptoms.json 데이터 구조 적용
 - [ ] EDK-04: main.py — 의약품 데이터 초기화 로직으로 교체
@@ -31,29 +32,12 @@
 
 ---
 
-## [ESG] UI 개선
+## [ESG] 운영 개선
 
-- [ ] GenderSelectPage — 성별에 따라 다른 세탁기 정보가 표시된다는 안내 문구 추가
-- [ ] LoginPage — 비밀번호 입력 필드 표시/숨기기 토글 버튼 추가 (👁 아이콘)
-
-## [ESG] 버그 수정
-
-- [ ] 대시보드 loading 무한 버그 — `machineStore.setData` + `DashboardPage` 수정 후 브라우저 확인 필요
-
-## [ESG] 구현 8단계: CI/CD — 수동 설정 (사용자)
-
-- [ ] Supabase: PostgreSQL 프로젝트 생성 → DATABASE_URL 확보
-- [ ] Fly.io: 가입 → `fly launch` (backend/) → `fly secrets set DATABASE_URL SECRET_KEY CORS_ORIGINS`
-- [ ] Vercel: GitHub 레포 연결 (Root: frontend/) → VITE_API_URL, VITE_WS_URL 환경변수 설정
-- [ ] GitHub Secrets: FLY_API_TOKEN, VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID 등록
-
-## [ESG] 구현 9단계: 운영 고려사항
-
-- [ ] Alembic 마이그레이션 — `create_all()` 대체
+- [ ] Alembic 마이그레이션 — `create_all()` 대체 (스키마 변경 이력 관리)
 
 ## [ESG] 향후 기능 (프로토타입 이후)
 
-- [ ] 학교 이메일 인증 — 1인 1계정 (학교 이메일 도메인 검증 + 6자리 코드, User.email, EmailVerification 테이블)
 - [ ] 관리자 페이지 — `/admin/machines/{id}` PATCH
 - [ ] PWA Push Notification — 백그라운드 알림
 - [ ] 통계 — `machine_status_logs` 테이블 + 시간대별 혼잡도 API

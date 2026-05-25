@@ -44,7 +44,7 @@
 - [x] 4단계: 백엔드 구조 설계
 - [x] 5단계: DB 및 데이터 흐름 설계
 - [x] 6단계: Docker 환경 구성
-- [x] 7단계: Railway 배포 전략
+- [x] 7단계: 배포 전략 (Railway → Fly.io + Supabase + Vercel 전환)
 
 ## [ESG] 구현 완료
 
@@ -52,12 +52,11 @@
 - [x] 구현 2단계: 성별 선택 UI (2026-05-24)
   - src/types/user.ts — Gender 타입
   - src/store/authStore.ts — Zustand + localStorage persist
-  - src/pages/GenderSelectPage.tsx — 남/여 선택 UI
+  - src/pages/GenderSelectPage.tsx — 남/여 선택 UI + 구역 안내 문구
   - src/App.tsx — /gender 라우트, 미선택 시 자동 redirect
-  - src/__tests__/authStore.test.ts — 단위 테스트 5개
 - [x] 구현 3단계: Auth — JWT register/login (2026-05-24)
   - app/models/user.py, app/core/security.py, app/api/auth.py
-  - app/schemas/auth.py — TokenResponse에 username/gender/role 포함 (프론트 JWT 디코딩 불필요)
+  - app/schemas/auth.py — TokenResponse에 username/gender/role 포함
   - 테스트: test_auth.py — 전체 PASS
 - [x] 구현 4단계: Machines + Mode A/B/C (2026-05-24)
   - app/models/machine.py, app/repositories/machine_repo.py (seed 17대)
@@ -80,14 +79,37 @@
   - main.py lifespan에 machine_repo.seed(db) 추가
   - .env 생성 (git 제외)
   - docker compose up --build 동작 확인
-  - 백엔드 26/26 PASS, 프론트엔드 6/6 PASS
-- [x] 구현 8단계: CI/CD 워크플로우 생성 (2026-05-24)
-  - .github/workflows/ci.yml — push/PR 시 pytest + vitest 자동 실행
-  - .github/workflows/cd.yml — main push 시 테스트 통과 후 Railway 자동 배포
-  - CD: 테스트 실패 시 배포 차단 (needs: [test-backend, test-frontend])
-  - Railway 서비스 연결은 수동 설정 필요 (RAILWAY_TOKEN 등)
+- [x] 구현 8단계: CI/CD (2026-05-24~25)
+  - .github/workflows/ci.yml — push/PR 시 pytest + vitest 자동 실행 (main, develope 브랜치)
+  - .github/workflows/cd.yml — main push 시 Fly.io + Vercel 자동 배포
+  - Fly.io: `flyctl deploy --remote-only`, fly.toml 루트 위치
+  - Vercel: vercel.json SPA rewrites, working-directory 제거로 경로 이중 적용 방지
+  - Fly.io Secrets: DATABASE_URL(Supabase), SECRET_KEY, CORS_ORIGINS, GMAIL_USER, GMAIL_APP_PASSWORD
+  - Vercel Env: VITE_API_URL, VITE_WS_URL
 - [x] 구현 9단계: 운영 고려사항 (2026-05-24)
   - slowapi rate limiting: /auth/register 5/min, /machines/request 3/min
   - soft_reserve 재요청 방지: get_active_reserve() + 409 반환
-  - CORS allow_origins: env var화 완료 (8단계에서)
-  - wss:// 전환: VITE_WS_URL env var로 처리 (배포 시 Vercel에서 설정)
+  - CORS allow_origins: env var화
+- [x] 구현 10단계: 이메일 인증 (2026-05-25)
+  - @hanyang.ac.kr 도메인 제한 + 6자리 OTP (10분 만료)
+  - Gmail SMTP 발송 (Resend 무료 플랜 외부 도메인 불가로 전환)
+  - app/models/email_verification.py, app/core/email.py
+  - src/pages/VerifyEmailPage.tsx
+  - 테스트: test_auth.py 32/32 PASS
+
+## [ESG] 기능 추가 (2026-05-25)
+
+- [x] 대기 순번 실시간 표시
+  - WS queue_position_updated 이벤트 (누군가 취소/알림받을 때 전원 갱신)
+  - QueueJoinResponse에 total 필드 추가
+  - DashboardPage: 현재 N번째 / 전체 M명 표시
+- [x] 모바일 PWA (standalone 모드)
+  - public/manifest.json (display: standalone, theme_color: #333)
+  - index.html: manifest link + iOS/Android 메타 태그
+  - App.tsx: 첫 터치 시 Fullscreen API 요청
+
+## [ESG] 버그/UI 수정 (2026-05-25)
+
+- [x] 대시보드 loading 무한 버그 수정 — data 있을 때는 loading/error 화면으로 교체하지 않음
+- [x] GenderSelectPage — 성별에 따라 다른 구역 세탁기 안내 문구 추가
+- [x] LoginPage — 비밀번호 표시/숨기기 토글 버튼 (👁/🙈)

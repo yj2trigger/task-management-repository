@@ -1,7 +1,7 @@
 # CURRENT_STATE — EDK (ic-pbl)
 
-> Last Update: 2026-05-23
-> Phase: 도메인 전환 — EDK(Erica Drug King) 리팩터링 시작
+> Last Update: 2026-05-25
+> Phase: 도메인 전환 — EDK(Erica Drug King) 리팩터링 대기 중 (미착수)
 
 ---
 
@@ -17,9 +17,9 @@
 
 ## Current Active Unit
 
-**EDK-01**: `product.py` → `medicine.py` 리팩터링
-- Coffee, Gummy → Medicine 클래스로 교체
-- product_type → symptom_category 개념으로 전환
+없음 — 전체 태스크 backlog.md 대기 중.
+
+현재 코드베이스는 원본 Micro-Factory Kiosk (Coffee/Gummy 도메인) 그대로.
 
 ---
 
@@ -48,7 +48,7 @@
 
 | 작업 | 파일 | 상태 |
 |------|------|------|
-| EDK-01 | product.py → medicine.py | 🔵 진행 중 |
+| EDK-01 | product.py → medicine.py | ⬜ 대기 |
 | EDK-02 | kiosk_controller.py → drug_controller.py | ⬜ 대기 |
 | EDK-03 | data_manager.py 데이터 구조 전환 | ⬜ 대기 |
 | EDK-04 | main.py 초기화 로직 교체 | ⬜ 대기 |
