@@ -289,3 +289,47 @@ Vercel: GitHub 연동 자동 배포 (별도 CD 불필요)
 | 배포 (FE) | Vercel | CDN, SPA rewrites, GitHub 연동 |
 | DB | Supabase | 관리형 PostgreSQL, 연결 풀 내장 |
 | 이메일 | Gmail SMTP | 외부 도메인 발송, 무료 500통/일 |
+
+---
+
+## 백엔드 파일 구조
+
+| 파일 | 내용 |
+|------|------|
+| `app/models/user.py` | User ORM (id, username, password_hash, gender, role, email, is_verified) |
+| `app/models/machine.py` | Machine ORM (floor, machine_number, status, gender_restriction, soft_reserve 필드) |
+| `app/models/queue_entry.py` | QueueEntry ORM (user_id, gender, status, created_at, notified_at, expires_at) |
+| `app/models/email_verification.py` | EmailVerification ORM (email, code, expires_at) |
+| `app/core/security.py` | bcrypt 해싱, JWT 생성/검증 |
+| `app/core/dependencies.py` | get_current_user, get_admin_user (role 체크) |
+| `app/core/ws_manager.py` | ConnectionManager 싱글톤, gender 채널 분리, user_id 타겟 알림 |
+| `app/core/email.py` | Gmail SMTP — send_verification_email() |
+| `app/repositories/machine_repo.py` | count_available, soft_reserve, release_expired(lazy), get_by_id, set_status, seed(17대) |
+| `app/repositories/queue_repo.py` | join, leave, get_position, get_next_waiter, get_all_waiting, count_waiting |
+| `app/api/ws.py` | JWT 검증 → 초기 상태 전송 → 30s keepalive + _notify_queue_and_broadcast, broadcast_queue_positions |
+| `app/api/auth.py` | register, verify-email, login, PATCH password, PATCH username |
+| `app/api/machines.py` | GET /machines, POST /machines/request, GET /machines/my-reservation |
+| `app/api/queue.py` | POST /queue/join, DELETE /queue/leave, GET /queue/status, POST /queue/accept |
+| `app/api/admin.py` | GET /admin/machines, PATCH /admin/machines/{id} (available 시 큐 알림 연동) |
+| `app/api/iot.py` | POST /iot/machines/{id}/status (X-Device-Key 인증) |
+
+---
+
+## 프론트엔드 파일 구조
+
+| 파일 | 내용 |
+|------|------|
+| `src/api/auth.ts` | register, login, verifyEmail, changePassword, changeUsername |
+| `src/api/machines.ts` | getMachines, requestMachine, getMyReservation |
+| `src/api/queue.ts` | joinQueue, leaveQueue, getQueueStatus, acceptOffer |
+| `src/api/admin.ts` | adminGetMachines, adminSetStatus |
+| `src/hooks/useWebSocket.ts` | 3s 자동 재연결, WsMessage 타입 (machines_updated / queue_notify / queue_position_updated / queue_offer / queue_offer_expired) |
+| `src/pages/GenderSelectPage.tsx` | 성별 선택 + 구역 안내 문구 |
+| `src/pages/LoginPage.tsx` | 로그인/회원가입 탭 전환 + 비밀번호 표시 토글 |
+| `src/pages/VerifyEmailPage.tsx` | 6자리 코드 입력 → 인증 완료 |
+| `src/pages/DashboardPage.tsx` | Mode A/B/C, modeBResult/queueInfo/pendingOffer 상위 상태 관리, 실시간 순번, 수락 배너 |
+| `src/pages/SettingsPage.tsx` | 비밀번호/아이디 변경 토글 폼, 로그아웃 |
+| `src/pages/AdminPage.tsx` | 층별 기기 상태 토글 (admin role 필요) |
+| `src/store/authStore.ts` | Zustand (user, gender, setUser, logout) + localStorage persist |
+| `src/store/machineStore.ts` | Zustand (data, loading, error) |
+| `public/manifest.json` | PWA manifest (display: standalone) |
