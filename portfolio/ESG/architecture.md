@@ -51,7 +51,7 @@
 | POST | `/machines/request` | Mode B 세탁기 배정 요청 |
 | POST | `/queue/join` | 대기열 등록 |
 | DELETE | `/queue/leave` | 대기열 취소 |
-| GET | `/queue/status` | 대기열 현황 조회 |
+| GET | `/queue/status` | 대기열 현황 조회 (waiting/notified 모두 반영) |
 | POST | `/queue/accept` | 5분 수락 대기 → 수락 확정 |
 | POST | `/auth/register` | 회원가입 (OTP 발송) |
 | POST | `/auth/verify-email` | 이메일 OTP 인증 |
@@ -139,6 +139,22 @@ notified → [삭제]   (수락 → 소프트 예약 10분 확정)
 notified → waiting  (5분 만료 → created_at=now → 맨 뒤)
 waiting → [삭제]    (대기 취소)
 ```
+
+### GET /queue/status 응답
+
+```python
+# waiting 상태
+{ in_queue: True, queue_position: 2, total: 5, is_notified: False }
+
+# notified 상태 (offer 수신, 수락 대기 중)
+{ in_queue: True, is_notified: True, accept_until: "2025-05-26T10:05:00" }
+
+# 대기열 없음
+{ in_queue: False }
+```
+
+`get_entry()` (status 무관) 조회 → notified 포함 모든 상태 반영.  
+페이지 새로고침 시 프론트엔드가 이 응답으로 pendingOffer / queueInfo 복원.
 
 ---
 
