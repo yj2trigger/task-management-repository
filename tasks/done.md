@@ -44,6 +44,14 @@
 - [x] `develope` 브랜치 오타 → `develop` 이름 변경
 - [x] 브랜치 전략: `feature/edk-XX` → `develop` → `main`
 
+## [ic-pbl] EDK-01 완료 (2026-05-26)
+
+- [x] `medicine.py` 신규: `Medicine` 클래스 (`symptom_categories: list[str]`, `description`, `dosage`, `caution`)
+- [x] `symptom.py` 신규: `Symptom`, `SymptomGroup` 클래스 (`is_emergency`, O(1) dict 룩업)
+- [x] `tests/test_medicine.py` 신규: 11개 단위 테스트
+- [x] `product.py` 삭제 (Coffee/Gummy 도메인 제거, git history 보존)
+- [x] PR #6 `feature/edk-01-medicine` → `develop` merge 완료
+
 ---
 
 ## [ESG] 설계 완료
@@ -61,7 +69,7 @@
 - [x] 구현 1단계: 프로젝트 골격 + Docker (2026-05-23)
 - [x] 구현 2단계: 성별 선택 UI (2026-05-24)
 - [x] 구현 3단계: Auth — JWT register/login (2026-05-24)
-- [x] 구현 4단계: Machines + Mode A/B/C (2026-05-24)
+- [x] 구턄 4단계: Machines + Mode A/B/C (2026-05-24)
 - [x] 구현 5단계: SoftReserve + Queue (2026-05-24)
 - [x] 구현 6단계: WebSocket (2026-05-24)
 - [x] 구현 7단계: Docker Compose 로컬 실행 (2026-05-24)
@@ -74,38 +82,23 @@
 - [x] 대기 순번 실시간 표시 — WS queue_position_updated 이벤트
 - [x] 모바일 PWA — standalone manifest + Fullscreen API
 - [x] 관리자 페이지 — 층별 세탁기 상태 토글 (role=admin 필요)
-  - `GET /admin/machines`, `PATCH /admin/machines/{id}`
-  - `get_admin_user` dependency (403 for non-admin)
-  - `AdminPage.tsx` — 층별 기기 목록 + 상태 변경 버튼
 - [x] 비밀번호 / 아이디 변경 (설정 페이지)
-  - `PATCH /auth/password` — 현재 비번 검증 후 해시 교체
-  - `PATCH /auth/username` — 현재 비번 검증 + 중복 확인 → 새 JWT 발급
-  - `SettingsPage.tsx` — 버튼 클릭 시 폼 토글, 로그아웃 버튼 포함
 - [x] IoT 신호 수신 엔드포인트
-  - `POST /iot/machines/{id}/status` — X-Device-Key 헤더 인증
-  - `is_running: false` → available + 대기열 알림 트리거
-  - `IOT_DEVICE_KEY` 환경변수 미설정 시 503
 
 ## [ESG] 버그/UI 수정 (2026-05-25)
 
-- [x] 대시보드 loading 무한 버그 — data 있을 때 loading/error 화면 교체 안 함
-- [x] GenderSelectPage — 성별별 구역 안내 문구
-- [x] LoginPage — 비밀번호 표시 토글
-- [x] WsMessage TypeScript 타입 누락 (queue_position_updated, position, total)
-- [x] 모바일 horizontal overflow — main에 boxSizing: border-box
-- [x] 대기열 상태 복원 — GET /queue/status + useEffect on mount
-- [x] Mode B 배정 결과 즉시 사라짐 — modeBResult 상위 상태로 올림
-- [x] Mode C 대기 중 모드 전환 시 대기 상태 소멸 — queueInfo 상위 상태로 올림
-- [x] 대기 중 Mode B/A 뷰 동시 표시 — queueInfo 있으면 Mode B/A 뷰 숨김
-- [x] 어드민 available 전환 시 큐 알림 미발송 — _notify_queue_and_broadcast 연결
+- [x] 대시보드 loading 무한 버그
+- [x] GenderSelectPage 성별별 구역 안내
+- [x] LoginPage 비밀번호 표시 토글
+- [x] WsMessage TypeScript 타입 누락
+- [x] 모바일 horizontal overflow
+- [x] 대기열 상태 복원
+- [x] Mode B/C 상태 관리 버그
+- [x] 어드민 available 전환 시 큐 알림 미발송
 
 ## [ESG] 기술부채 해결 + 협업 인프라 (2026-05-25)
 
-- [x] 기술부채 #1: `datetime.utcnow()` deprecated → `datetime.now(timezone.utc)` 전환
-- [x] 기술부채 #2: `DateTime` → `DateTime(timezone=True)` (machines, email_verifications)
-- [x] 기술부채 #3: Alembic 마이그레이션 도입 — env.py 작성 + 첫 revision 생성 + Supabase 적용
-- [x] pytest 커버리지 확장 — 32 → 42 cases (queue status/accept, machine duplicate/my-reservation)
-- [x] GitHub 협업 설정 — branch protection (main/develop), PR 템플릿, ONBOARDING.md
-- [x] CI workflow: `develope` 오타 수정 → `develop`, PR 트리거 추가
-- [x] CD workflow: develop PR 시 테스트만 실행, deploy는 main push 한정
-- [x] 브랜치 전략 수립 — develop 브랜치 생성, feature → develop → main 흐름
+- [x] 기술부채 #1~3: datetime, DateTime timezone, Alembic 마이그레이션
+- [x] pytest 커버리지 32 → 42 cases
+- [x] GitHub 협업 설정 — branch protection, PR 템플릿, ONBOARDING.md
+- [x] CI/CD workflow 정비, 브랜치 전략 수립

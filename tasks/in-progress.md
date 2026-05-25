@@ -4,9 +4,7 @@
 
 ---
 
-## [ic-pbl] EDK-01 — PR 리뷰 대기 중
+## [ic-pbl] EDK-03 — data_manager.py
 
-- [ ] EDK-01: `medicine.py`, `symptom.py`, `test_medicine.py` 추가 + `product.py` 삭제
-  - PR #6: `feature/edk-01-medicine` → `develop`
-  - Gemini 코드 리뷰 완료
-  - **merge 대기 중 (사용자 승인 필요)**
+- [ ] EDK-03: `medicines.json` / `symptoms.json` 데이터 구조 설계 + `DataManager` 로드 로직
+  - 브랜치: `feature/edk-03-data-manager` → `develop`
