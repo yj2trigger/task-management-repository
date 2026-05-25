@@ -4,11 +4,10 @@
 
 ---
 
-## [ic-pbl] GUI-EDK — GUI 화면 EDK 도메인으로 교체
+## [ic-pbl] 테스트 재작성 — EDK 도메인 기준
 
-- [ ] GUI-EDK-01: `main_window.py` — 네비게이션 API를 EDK 화면 흐름으로 교체
-- [ ] GUI-EDK-02: `main_menu.py` → `symptom_select.py` — 증상 카테고리 선택 화면
-- [ ] GUI-EDK-03: `product_list.py` → `medicine_list.py` — 의약품 목록 화면
-- [ ] GUI-EDK-04: `customize.py` → `medicine_detail.py` — 의약품 상세 + 장바구니 화면
-- [ ] GUI-EDK-05: (신규) `emergency.py` — 응급 안내 화면
-- [ ] GUI-EDK-06: `admin_menu.py` — 의약품 정보/재고 관리로 수정
+- [ ] 구 도메인 테스트 제거: `test_product.py`, `test_ingredient.py`, `test_controller.py`, `test_scenarios.py`, `test_cli_integration.py`
+- [ ] `conftest.py` 재작성: EDK fixtures (`medicine`, `symptom`, `cart`)
+- [ ] `test_cart.py` 재작성: Medicine 기반 Cart 동작 검증
+- [ ] `test_gui_app.py`, `test_gui_screens.py` 재작성: EDK KioskWindow 기반
+- [ ] `test_edk_integration.py` 신규: 증상 선택 → 의약품 탐색 → 결제 시나리오
