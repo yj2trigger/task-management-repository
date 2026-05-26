@@ -45,7 +45,8 @@ edge-tts + pygame으로 의약품 상세 화면 진입 시 복용 안내 자동 
 ### 현금 결제 + 잔돈 계산
 
 권종별 투입 누적 → 그리디 알고리즘으로 최적 잔돈 반환.  
-잔돈 부족 시 거래 중단, 투입 금액 전액 반환.
+잔돈 부족 시 거래 중단, 투입 금액 전액 반환.  
+**모든 가격 최소 1,000원 단위** — 잔돈 시스템이 1,000원+ 권종만 보유하므로 100/500원 단위 제거.
 
 ### 관리자 기능
 
@@ -93,7 +94,8 @@ project/
 │   │   ├── service/
 │   │   │   └── voice_service.py     # edge-tts + pygame TTS
 │   │   └── data/
-│   │       ├── medicines.json
+│   │       ├── medicines.json       # 의약품 데이터 (가격 1,000원 단위)
+│   │       ├── options.json         # 옵션 추가금 (최소 1,000원)
 │   │       ├── symptoms.json
 │   │       └── admin_config.json    # scrypt 해시 비밀번호 저장
 │   └── main.py
@@ -136,6 +138,9 @@ cli/cli_view.py와 gui/는 controller만 참조 — 모델 직접 접근 금지.
 scrypt 선택 이유: bcrypt(외부 패키지) · pbkdf2_hmac(메모리 경화 없음) 대비,  
 stdlib + memory-hard로 Python 3.10+ 요구사항에 최적.
 
+**보안 한계:** exe 역공학 시 알고리즘·파라미터 노출 → 단방향 해시 특성상 역산 불가(Kerckhoffs 원칙).  
+단, 소스에 하드코딩된 기본 비밀번호(`"1234"`)가 노출되므로 최초 실행 후 비밀번호 변경 필수.
+
 ---
 
 ## 테스트
@@ -174,6 +179,7 @@ pytest -v       # 상세 출력
 | 테스트 재작성 | Coffee/Gummy 테스트 → EDK 도메인 전체 재작성 |
 | 패키징 | pyproject.toml setuptools, Windows/Mac 빌드 스크립트 |
 | 보안 강화 | 관리자 비밀번호 평문 → scrypt 해시 + 자동 마이그레이션 |
+| 가격 정규화 | 전 상품 최소 1,000원 단위 — 의약품 3종 + 옵션 10개 조정 |
 
 ---
 
@@ -195,6 +201,15 @@ bcrypt는 `passlib` 또는 `bcrypt` 패키지 필요, pbkdf2는 메모리 경화
 `verify_password`가 `scrypt$` prefix 없으면 평문 비교 허용 → 첫 로그인은 기존 비밀번호 그대로 통과.  
 `main.py` 시작 시 평문 감지 → 즉시 해시 저장 → 이후부터 항상 해시 검증.  
 사용자 개입 없이 보안 수준 자동 업그레이드.
+
+**비밀번호 해시 보안 원칙 (Kerckhoffs):**  
+exe 역공학으로 알고리즘·파라미터가 노출돼도 단방향 해시는 역산 불가.  
+보안은 알고리즘 비밀이 아니라 해시의 수학적 일방향성에서 온다.  
+실제 위협은 소스에 하드코딩된 기본값 노출 — 알고리즘 노출과 기본값 노출은 다른 문제.
+
+**가격 단위 정규화:**  
+현금 결제 잔돈 시스템이 1,000원+ 권종만 보유 → 100/500원 단위 가격 존재 시 잔돈 계산 불일치 발생.  
+데이터 계층(JSON)에서 강제 → 코드 수정 없이 정책 변경 가능.
 
 **pyproject.toml pythonpath 설정:**  
 `[tool.pytest.ini_options] pythonpath = ["src"]` — `PYTHONPATH` 환경변수 없이 pytest 실행 가능.  
