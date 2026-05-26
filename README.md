@@ -58,7 +58,7 @@ task-management-repository/
 
 | 프로젝트 | 레포지토리 | 현재 상태 |
 |---------|-----------|---------|
-| ic-pbl (EDK) | [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | 🔵 EDK-01 진행 중 (medicine.py 리팩터링) |
+| ic-pbl (EDK) | [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | 🔵 EDK 전체 구현 완료, PR #16 main 머지 대기 |
 | ESG | [yj2trigger/ESG](https://github.com/yj2trigger/ESG) | 🟢 핵심 기능 완료 + 운영 중 |
 
 ---
