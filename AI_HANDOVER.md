@@ -1,6 +1,7 @@
 # AI 인계 문서 (AI Handover Guide)
 
 > 작성일: 2026-05-23
+> 최종 갱신: 2026-05-27
 > 목적: 이 문서를 읽은 AI가 현재 진행 중인 작업을 즉시 이어받을 수 있도록 합니다.
 
 ---
@@ -24,8 +25,8 @@
 
 | 프로젝트 | 레포 | 현재 상태 |
 |---------|------|---------|
-| ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK-01 진행 중 (medicine.py 리팩터링) |
-| ESG | [ESG](https://github.com/yj2trigger/ESG) | 구현 1단계 완료, 2단계(성별 선택) 승인 대기 |
+| ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK 전체 구현 완료, PR #16 main 머지 대기 |
+| ESG | [ESG](https://github.com/yj2trigger/ESG) | 핵심 기능 완료 + 운영 중 |
 
 ---
 
@@ -52,54 +53,51 @@
 
 ---
 
-## ESG 프로젝트 인계 정보
+## ic-pbl (EDK) 프로젝트 인계 정보
 
-### 다음에 할 작업: 구현 2단계 — 성별 선택 (프론트엔드 only)
+### 현재 상태: PR #16 main 머지 대기
 
-**작업 내용:**
-- `project/frontend/src/types/user.ts` — Gender 타입 정의
-- `project/frontend/src/store/authStore.ts` — Zustand + localStorage
-- `project/frontend/src/pages/GenderSelectPage.tsx` — 남/여 선택 UI
-- `project/frontend/src/App.tsx` 수정 — 라우팅 연결
-- `project/frontend/src/__tests__/authStore.test.ts` — store 단위 테스트
+`pmg-ic-pbl`의 `develop` 브랜치에 EDK 전체 구현이 올라가 있으며, `main` 대상 PR #16이 열려 있습니다.
 
-**설계 결정 사항 (변경 불가):**
-- 인증 없음 — gender를 localStorage에 저장
-- 백엔드 API 요청 시 쿼리 파라미터(`?gender=male`)로 전달
-- 프로토타입이므로 로그인/회원가입 구현하지 않음
+**GitHub 상태:**
+- PR: https://github.com/yj2trigger/pmg-ic-pbl/pull/16
+- Head: `develop` commit `13857d4`
+- Base: `main`
+- 상태: `mergeable: true`, `develop` behind 0
+- 로컬 검증: `project/`에서 `python -m pytest` → `198 passed, 6 subtests passed`
 
-**파일 위치:** `ESG 레포 > project/frontend/`
+**포함된 작업:**
+- `Medicine`, `Symptom`, `SymptomGroup` 도메인 전환
+- `DrugController` 및 `DataManager` 의약품/증상 JSON 전환
+- CLI 증상 선택 → 의약품 탐색 → 결제 흐름
+- PyQt6 GUI 증상 선택, 의약품 목록/상세, 응급 안내, 관리자 화면
+- EDK 기준 테스트 전면 재작성
+- `project/pyproject.toml`, `project/README.md` 패키징/문서화
+- 관리자 비밀번호 scrypt 해시 및 평문 자동 마이그레이션
+- 가격 정책 1000원 단위 정규화
+- `stats.py`와 `test_stats.py` Medicine 기준 수정
 
-**전체 구현 순서:**
+**다음 작업:**
+1. PR #16 최종 확인
+2. 이상 없으면 main으로 머지
+3. 머지 후 `docs/ic-pbl/CURRENT_STATE.md`와 `tasks/done.md`에 PR #16 머지 완료 반영
 
-| 순서 | 기능 | 백엔드 | 프론트엔드 |
-|------|------|--------|-----------|
-| 1 | 프로젝트 골격 + Docker | ✅ | ✅ |
-| 2 | 성별 선택 | — | ⏳ 다음 작업 |
-| 3 | 세탁기 상태 조회 (Mode A/B/C) | ⏳ | ⏳ |
-| 4 | Mode B — 소프트 예약 | ⏳ | ⏳ |
-| 5 | Mode C — 대기열 | ⏳ | ⏳ |
-| 6 | WebSocket 실시간 연결 | ⏳ | ⏳ |
-
-**설계 문서 위치:** `ESG 레포 > project/design_progress.md` (1~9단계 전체 설계 포함)
+**주의:**
+- `pmg-ic-pbl/docs/`는 이 관리 레포로 이전되어 삭제 유지가 맞습니다.
+- 프로젝트 문서 SSOT는 `task-management-repository/docs/ic-pbl/`입니다.
 
 ---
 
-## ic-pbl (EDK) 프로젝트 인계 정보
+## ESG 프로젝트 인계 정보
 
-### 다음에 할 작업: EDK-01 — medicine.py 리팩터링
+### 현재 상태: 핵심 기능 완료 + 운영 중
 
-**작업 내용:**
-- `pmg-ic-pbl/project/src/app/product.py`의 `Coffee`, `Gummy` 클래스를
-  `medicine.py`의 `Medicine` 클래스로 교체
-- `product_type` → `symptom_category` 개념으로 전환
-- `symptom_category`: `두통`, `감기`, `소화불량`, `피로`, `외상` 중 하나
+상세 상태는 `docs/ESG/CURRENT_STATE.md`를 기준으로 확인합니다.
 
-**설계 결정 사항:**
-- 결제 시스템(payment.py, cart.py) 유지 — 실제 판매 서비스이므로 필수
-- 전문의약품 제외, 일반의약품 + 영양제만 취급
-
-**설계 문서 위치:** `docs/ic-pbl/` 전체
+**향후 주요 작업:**
+- IoT 실물 연동: Tuya WiFi 플러그 연결 + Device ID 확보
+- DB Quota 관리: 자동 정리, 관리자 시스템 통계, 이메일 알림
+- 운영 개선: 다중 서버 WebSocket 브로드캐스트 보완
 
 ---
 
