@@ -2,9 +2,9 @@
 
 한양대학교 기숙사 세탁기 실시간 현황 조회 및 대기열 예약 서비스.
 
-**기간:** 2025년 5월  
+**기간:** 2025년 5월 ~ (진행 중)  
 **역할:** 풀스택 단독 개발  
-**상태:** 프로토타입 완성, IoT 연동 예정
+**상태:** 운영 중 (Fly.io + Supabase + Vercel) — Tuya Cloud 크레덴셜 확보, IoT 물리 연결 대기, DB Quota 관리 계획 수립 완료
 
 ---
 
@@ -55,7 +55,15 @@ WebSocket으로 세탁기 상태 변경 즉시 반영 (polling 없음).
 ### IoT 연동 (엔드포인트 준비 완료)
 
 실제 세탁기 센서 → `POST /iot/machines/{id}/status` → 자동 상태 반영.  
-현재: 장치 연결 대기 중. curl/Postman으로 동작 확인 완료.
+Tuya Cloud Smart Home 프로젝트 생성 완료, 크레덴셜 확보 (Client ID / Secret / Project ID), 장치 물리 연결 대기 중.  
+HMAC-SHA256 서명 + Adaptive Polling으로 Tuya API quota 67% 유지 (17,460/26,000 호출/월).
+
+### DB Quota 관리 (계획 수립 완료)
+
+Supabase 무료 플랜 500MB 한도. IoT 연동 후 `machine_status_logs` 급증 예상 (~14,400 행/일).  
+- 30일 자동 정리 (`maintenance_service.py` — 구현 예정)  
+- 사용량 >80%: 경고, >90%: Gmail SMTP 관리자 알림 + 자동 정리  
+- 관리자 페이지 `GET /admin/system/stats` DB 사용량 게이지 표시 (구현 예정)
 
 ---
 
@@ -132,8 +140,8 @@ npm run dev
 
 | 항목 | 내용 |
 |------|------|
-| **브랜치 전략** | `feature/* → develop → main` (GitHub Flow 변형) |
-| **Branch Protection** | main/develop 모두 PR 필수, CI 통과 필수, 관리자 bypass 허용 |
+| **브랜치 전략** | `feature/* → main` (GitHub Flow) |
+| **Branch Protection** | main PR 필수, CI 통과 필수, 관리자 bypass 허용 |
 | **CI** | pytest + vitest — feature PR마다 자동 실행 |
 | **CD** | main push 시에만 Fly.io + Vercel 자동 배포 |
 | **ONBOARDING.md** | 환경 구성, API 명세, WebSocket 이벤트, 브랜치 전략 전체 문서화 |
@@ -176,3 +184,8 @@ notified 상태 구현 시 복원 누락 → 수락 배너 사라짐, 등록 버
 `create_all()`은 테이블 생성만, 컬럼 변경은 추적 불가 → Alembic 필수.  
 URL 특수문자(`%40`)와 configparser 보간 충돌 — URL은 환경변수로만 관리, ini에 직접 쓰지 않는다.  
 Supabase는 Direct URL(IPv6 전용)과 Session Pooler URL(IPv4 지원) 두 개 제공, 로컬 개발에서는 Pooler 사용.
+
+**DB Quota 선제 관리:**  
+IoT 연동 시 로그 수집량 급증을 사전 계산 (6초 간격 × ~30대 = ~14,400 행/일 × 30일 = ~432,000 행 축적).  
+실제 한도 도달 전에 retention policy + 경보 임계값을 먼저 설계.  
+`pg_database_size()` 직접 조회로 Supabase quota를 모니터링, 80%/90% 임계값에서 단계별 대응.
