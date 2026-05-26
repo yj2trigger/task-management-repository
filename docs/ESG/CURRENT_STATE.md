@@ -42,6 +42,8 @@
 | 13. 관리자 페이지 (세탁기 상태 변경) | ✅ | ✅ |
 | 14. 비밀번호 / 아이디 변경 (설정 페이지) | ✅ | ✅ |
 | 15. IoT 신호 수신 엔드포인트 | ✅ | — |
+| 16. Tuya Cloud 크레덴셜 확보 | ✅ | — |
+| 17. DB Quota 관리 계획 수립 | ✅ | — |
 
 ---
 
@@ -69,8 +71,11 @@
 | 항목 | 내용 |
 |------|------|
 | `in_use` 자동 해제 | 없음 — 어드민 수동 또는 IoT 연동 필요 |
-| IoT 실제 연동 | 엔드포인트 준비 완료, 장치 연결 대기 — [Polling 전략: ADR-007](../../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md) |
+| IoT 실제 연동 | 엔드포인트 준비 완료, Tuya 크레덴셜 확보 — 장치 물리 연결 대기 — [ADR-007](../../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md) |
+| Tuya 설정 | Smart Home 프로젝트 생성 완료, Link Tuya App Account + QR 연동 절차 확립, China 데이터센터 선택 — [13단계](./full_plan.md) |
 | Tuya API quota | 26,000 호출/월 (무료) — Adaptive polling으로 17,460/월 예상 (quota 67%) — [ADR-007](../../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md) |
 | IoT 확장 | Tuya WiFi 16A (프로토타입) → 30대 초과 또는 간섭 시 Zigbee 전환 예정 |
 | PWA Push Notification | WebSocket 인앱 알림만 — 백그라운드 미지원 |
+| DB Quota 관리 | Supabase 500MB 무료 한도 — IoT 연동 후 machine_status_logs 급증 예상 — 30일 자동 정리 + Gmail 알림 계획 수립 완료 — [14단계](./full_plan.md) |
 | 통계 | `machine_status_logs` 미구현 |
+| Alembic 마이그레이션 | 미적용 (`create_all()` 사용 중) |
