@@ -1,78 +1,63 @@
 # CURRENT_STATE — EDK (ic-pbl)
 
-> Last Update: 2026-05-25
-> Phase: 도메인 전환 — EDK(Erica Drug King) 리팩터링 대기 중 (미착수)
+> Last Update: 2026-05-27
+> 원본 레포: [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl)
+> 현재 통합 PR: [#16 develop → main](https://github.com/yj2trigger/pmg-ic-pbl/pull/16)
 
 ---
 
-## ⚠️ 프로젝트 방향 전환
+## 현재 단계
 
-**기존**: Micro-Factory Kiosk (커피/영양구미 판매)
-**변경**: EDK — 증상 선택 기반 일반의약품/영양제 실제 판매 키오스크
+**EDK 도메인 전환, PyQt6 GUI 전환, 테스트 재작성, 패키징, 관리자 비밀번호 해시 완료.**
 
-기존 PyQt6 GUI 아키텍처(QStackedWidget, screens/, voice_service)는 그대로 재활용.
-결제 시스템(payment.py, cart.py, ChangeReserve)은 유지 — 실제 판매이므로 필수.
+`develop` 브랜치는 `main` 최신 커밋을 병합해 뒤처짐 0 상태이며, PR #16은 `mergeable: true` 상태다.
 
 ---
 
 ## Current Active Unit
 
-없음 — 전체 태스크 backlog.md 대기 중.
-
-현재 코드베이스는 원본 Micro-Factory Kiosk (Coffee/Gummy 도메인) 그대로.
+PR #16 최종 검토 및 main 머지 대기.
 
 ---
 
-## ✅ 재활용 확정 유닛
+## 구현 완료 요약
 
-> 클래스/모듈 단위 재활용 전략 (구 클래스 → 신 클래스 매핑): [requirements.md § 2.4](./requirements.md)
-
-| 파일 | 재활용 방식 |
-|------|-----------|
-| exceptions.py | 그대로 재활용 |
-| ingredient.py | 의약품/영양제 재고로 재활용 |
-| cart.py | 그대로 재활용 (실제 판매, 장바구니 필요) |
-| payment.py | 그대로 재활용 (현금/카드 결제 필요) |
-| data_manager.py | 의약품 JSON 데이터 관리로 재활용 |
-| gui/app.py | 그대로 재활용 |
-| gui/voice_service.py | 그대로 재활용 |
-| gui/screens/admin_auth.py | 그대로 재활용 |
-| gui/screens/cart.py | 그대로 재활용 |
-| gui/screens/payment_method.py | 그대로 재활용 |
-| gui/screens/cash_payment.py | 그대로 재활용 |
-| gui/screens/receipt.py | 그대로 재활용 |
+| 영역 | 상태 | 비고 |
+|------|------|------|
+| Medicine/Symptom 도메인 | 완료 | `product.py` 제거, `medicine.py`/`symptom.py` 추가 |
+| DataManager 전환 | 완료 | `medicines.json`, `symptoms.json` 로드/저장 |
+| DrugController | 완료 | 증상별 의약품 조회, 판매 가능 필터링 |
+| CLI | 완료 | 증상 선택 → 의약품 상세 → 장바구니 → 결제 |
+| PyQt6 GUI | 완료 | 증상 선택, 의약품 목록/상세, 응급 안내, 관리자 화면 |
+| 테스트 | 완료 | Coffee/Gummy 테스트를 EDK 기준으로 재작성 |
+| 패키징/문서 | 완료 | `project/pyproject.toml`, `project/README.md` |
+| 관리자 보안 | 완료 | scrypt 해시, 레거시 평문 자동 마이그레이션 |
+| 가격 정책 | 완료 | 의약품/옵션 가격 1000원 단위 정규화 |
+| 통계 테스트 잔여 전환 | 완료 | `stats.py`와 `test_stats.py`를 Medicine 기준으로 수정 |
 
 ---
 
-## 🔄 EDK 전환 작업 목록
+## 마지막 검증
 
-→ 상세 태스크 목록: [tasks/backlog.md](../../tasks/backlog.md) § [ic-pbl] EDK 도메인 전환
-
----
-
-## 목표 파일 구조 (전환 후)
-
-→ 상세: [architecture.md § 2. EDK 전환 후 목표 파일 구조](./architecture.md)
-
----
-
-## 데이터 파일 구성
-
-→ 상세 (갱신 시점 포함): [scope.md § 7. 데이터 파일 구성](./scope.md)
+- 레포: `yj2trigger/pmg-ic-pbl`
+- 브랜치: `develop`
+- 커밋: `13857d4` — `Merge main into develop and fix EDK stats`
+- 실행 위치: `project/`
+- 명령: `python -m pytest`
+- 결과: `198 passed, 6 subtests passed`
 
 ---
 
-## Current Risks
+## 알려진 상태
 
-- 기존 테스트(test_*.py)가 구 도메인(커피/구미) 기반 — 전환 후 재작성 필요
-- cart/payment 테스트는 로직 변경 없으면 재활용 가능
+- PR #16은 열려 있고 머지 가능하다.
+- GitHub status API 기준 커밋 status는 비어 있다. 별도 필수 CI status는 확인되지 않았다.
+- `pmg-ic-pbl/docs/`는 관리 레포 문서로 이전되어 삭제 유지가 맞다.
 
 ---
 
-## 실행 방법
+## 다음 권장 작업
 
-```bash
-# project/ 디렉토리 안에서
-python -m app.main        # CLI 모드
-python -m app.main --gui  # GUI 모드
-```
+1. PR #16을 최종 확인한다.
+2. 문제가 없으면 `main`으로 머지한다.
+3. 머지 후 이 문서와 `tasks/done.md`에 PR #16 머지 완료를 반영한다.
