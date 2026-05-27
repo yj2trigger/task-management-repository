@@ -1,7 +1,7 @@
 # AI 인계 문서 (AI Handover Guide)
 
 > 작성일: 2026-05-23
-> 최종 갱신: 2026-05-27
+> 최종 갱신: 2026-05-28
 > 목적: 이 문서를 읽은 AI가 현재 진행 중인 작업을 즉시 이어받을 수 있도록 합니다.
 
 ---
@@ -27,6 +27,7 @@
 |---------|------|---------|
 | ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK 전체 구현 완료, PR #16 main 머지 대기 |
 | ESG | [ESG](https://github.com/yj2trigger/ESG) | 핵심 기능 완료 + 운영 중 |
+| MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | 인증 도메인 구현 완료, 코드 개선 완료 |
 
 ---
 
@@ -37,8 +38,9 @@
 | 1 | `COLLABORATION_RULES.md` | AI가 따라야 할 협업 규칙 |
 | 2 | `docs/ic-pbl/CURRENT_STATE.md` | ic-pbl 현재 진행 상태 |
 | 3 | `docs/ESG/CURRENT_STATE.md` | ESG 현재 진행 상태 |
-| 4 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
-| 5 | `tasks/backlog.md` | 대기 중인 태스크 |
+| 4 | `docs/MAP/CURRENT_STATE.md` | MAP 현재 진행 상태 |
+| 5 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
+| 6 | `tasks/backlog.md` | 대기 중인 태스크 |
 
 ---
 
@@ -101,16 +103,45 @@
 
 ---
 
+## MAP 프로젝트 인계 정보
+
+### 현재 상태: 인증 도메인 구현 완료
+
+레포: `we-meet-trip/map-service-user` (Spring Boot 3.4.2, JDK 21 Virtual Threads)
+
+**완료된 작업 (2026-05-28):**
+- Swagger → Spring REST Docs 마이그레이션
+- AuthControllerTest 전원 403 수정 (`addFilters = false`)
+- RateLimitService Lua 스크립트 (atomic rate limiting)
+- RefreshToken device 필드 제거 + V2 Flyway 마이그레이션
+- CORS 외부화 (CorsProperties, `CORS_ALLOWED_ORIGINS` 환경변수)
+- JwtService 생성자 초기화, KakaoOAuthService RestClient 주입 전환
+
+**미완료 / 다음 작업:**
+- CORS 운영 도메인 확정 후 `CORS_ALLOWED_ORIGINS` 환경변수 설정
+- OAuth access_token DB 암호화 (AES-256-GCM, 현재 평문 저장)
+- Apple OAuth2 구현
+- 프로덕션 배포 (CI/CD 파이프라인)
+
+**주의사항:**
+- **git push 절대 금지** — 사용자 명시적 승인 후에만 push (`절대 push는 하지 마세요`)
+- 로컬 작업 디렉토리: `c:\onedrive\_대학교\MAP\git\map-service-user`
+- git user: `yj2trigger`, org: `we-meet-trip`
+- 상세 상태: `docs/MAP/CURRENT_STATE.md`
+
+---
+
 ## GitHub MCP 사용 방법
 
 이 레포와 하위 프로젝트 레포는 GitHub MCP로 직접 파일을 읽고 쓸 수 있습니다.
 
 ```
-owner: yj2trigger
+owner: yj2trigger / we-meet-trip
 repos:
   - task-management-repository  (이 레포)
   - pmg-ic-pbl                  (ic-pbl 코드)
   - ESG                         (ESG 코드)
+  - map-service-user            (MAP 코드, org: we-meet-trip)
 ```
 
 **작업 흐름:**
