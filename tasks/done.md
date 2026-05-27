@@ -4,6 +4,25 @@
 
 ---
 
+## [MAP] map-service-user 인증 도메인 + 코드 개선 (2026-05-28)
+
+- [x] Swagger/OpenAPI 완전 제거 → Spring REST Docs 마이그레이션
+  - springdoc 의존성 제거, `AuthApi` 인터페이스 삭제, `SwaggerConfig` 삭제
+  - `build.gradle`: asciidoctor 플러그인 + `spring-restdocs-mockmvc` 추가
+  - `AuthControllerRestDocsTest` 신규 작성 (5개 엔드포인트)
+  - `src/docs/asciidoc/index.adoc` 신규 작성
+- [x] 테스트 수정
+  - `AuthControllerTest`: `@AutoConfigureMockMvc(addFilters = false)` 추가 → 전원 403 수정
+  - `KakaoOAuthServiceTest`: stub ID 오류 수정 (`eq(999L)` → `eq(9999999999L)`)
+- [x] `JwtService`: `@PostConstruct` 제거 → 생성자에서 `JwtParser` 초기화 (단위 테스트 직접 생성 지원)
+- [x] `KakaoOAuthService`: `RestClient` 필드 초기화 → `@Bean` 주입으로 변경 (테스트 가능), `parseConnectedAt` timezone 파싱 fix (`OffsetDateTime.parse`)
+- [x] `GlobalExceptionHandler`: `HttpMessageNotReadableException` / `MissingRequestHeaderException` / `HttpRequestMethodNotSupportedException` 핸들러 추가
+- [x] `RateLimitService`: `INCR+EXPIRE` 두 명령 → `DefaultRedisScript` Lua 스크립트 원자 실행 (race condition 제거)
+- [x] `RefreshToken`: `device` 필드 제거 + `V2__remove_device_id_from_refresh_tokens.sql` Flyway 마이그레이션 생성
+- [x] `CorsProperties` 신설, `SecurityConfig` CORS 외부화 (prod.yaml: `CORS_ALLOWED_ORIGINS` 환경변수)
+
+---
+
 ## [ic-pbl] Core 구현 완료 (2026-05-12)
 
 - [x] UNIT-01~12: 전체 테스트 PASS
