@@ -862,3 +862,116 @@ function asUtc(s: string): Date {
 **근본 해결 (Alembic TIMESTAMPTZ 마이그레이션)**:
 `DateTime(timezone=True)` 컬럼은 PostgreSQL에서 UTC로 저장 + ISO 8601(+00:00) 포함 직렬화.
 → JS `new Date()`가 올바르게 UTC로 파싱. `asUtc()` 헬퍼 불필요.
+
+---
+
+## 17. SmartThings IoT 전력 수집 구현 (2026-05-28)
+
+### 17-1. polling 비활성 원인 추적
+
+SmartThings polling이 동작하지 않는 것으로 보였으나, 실제로는 3가지 독립적인 문제가 순차적으로 숨어 있었다.
+
+1. **Python logging 레벨**: root logger 기본값이 WARNING → `logger.info()` 전부 무시. Fly.io 로그에 polling 시작 메시지조차 안 보임.
+2. **SMARTTHINGS_DEVICE_01 미설정**: GitHub Actions CD가 `flyctl secrets set` 없이 deploy만 함 → Fly.io에 device env var 없음 → `_parse_device_map()` 빈 dict → polling 즉시 종료.
+3. **PAT 빈 문자열**: `SMARTTHINGS_PAT`이 GitHub Secret에는 있었으나 CD workflow에서 `flyctl secrets set` 단계가 없어서 Fly.io에는 빈 값이 설정됨.
+
+근본 원인: CD workflow가 시크릿을 Fly.io에 자동으로 전파하는 단계 없이 `flyctl deploy`만 실행.
+
+### 17-2. flyctl secrets 전파 방식 결정
+
+| 시도 | 결과 |
+|------|------|
+| Fly.io Web Dashboard에서 직접 설정 | "no machines available to deploy" 오류로 시크릿 저장 불가 |
+| `flyctl secrets deploy` | npm 설치 필요 → 로컬 불가 |
+| `flyctl secrets sync` | 기존 시크릿 덮어써서 SMARTTHINGS_DEVICE_01 삭제됨 |
+| GitHub Actions CD에서 `flyctl secrets set` | ✅ 채택 |
+
+```yaml
+- name: Set Fly.io secrets
+  run: |
+    flyctl secrets set \
+      SMARTTHINGS_PAT="$SMARTTHINGS_PAT" \
+      SMARTTHINGS_DEVICE_01="$SMARTTHINGS_DEVICE_01" \
+      --app esg-laundry-checker
+  continue-on-error: true
+  env:
+    FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    SMARTTHINGS_PAT: ${{ secrets.SMARTTHINGS_PAT }}
+    SMARTTHINGS_DEVICE_01: ${{ secrets.SMARTTHINGS_DEVICE_01 }}
+```
+
+`continue-on-error: true` 이유: 시크릿이 이미 같은 값이면 `flyctl secrets set`도 배포를 트리거하는데, 이미 머신이 배포 중이면 오류 반환. 다음 `flyctl deploy`가 어차피 최신 시크릿을 반영함.
+
+### 17-3. logging 설정
+
+```python
+# app/main.py
+import logging
+logging.getLogger("app").setLevel(logging.INFO)
+```
+
+root logger를 바꾸지 않고 `app` 네임스페이스만 설정. `app.services.smartthings_poller` 등 모든 `app.*` 모듈의 INFO 로그가 Fly.io에 표시됨.
+
+### 17-4. polling 루프 내결함성
+
+초기 구현: `_get_mode_and_threshold()`를 하나의 try/except로 묶음. DB 오류 시 해당 iteration만 건너뜀.
+
+**문제**: `get_current_mode(db, "male")` 실패 시 threshold 조회도 안 됨. DB 재시도 논리가 불투명.
+
+**개선**: mode 조회와 threshold 조회를 독립적으로 분리. 각 기기 polling도 개별 try/except.
+
+```python
+# mode 조회 실패 → "A"로 fallback (가장 긴 주기 = 보수적 선택)
+try:
+    mode = get_current_mode(db, "male")
+except Exception:
+    mode = "A"
+
+# threshold 조회 실패 → settings 기본값 사용
+try:
+    threshold = system_settings_repo.get_float(db, _THRESHOLD_KEY, settings.power_threshold_w)
+except Exception:
+    threshold = settings.power_threshold_w
+```
+
+### 17-5. ADR-007 적응형 주기 설계
+
+초기 구현이 Mode A=60s(가장 빠름), Mode C=480s(가장 느림)로 역전되어 있었다.
+
+**올바른 방향**: 이용 가능한 세탁기가 적을수록(수요 높음) polling 빈도를 높여야 한다.
+
+```
+Mode C (0대, 만원) → 60s   ← 빈 세탁기 발생 즉시 감지
+Mode B (1~3대)     → 120s
+Mode A (4대 이상)  → 480s  ← 여유로움, 느린 감지 OK
+야간 (22:00–07:00) → 900s  ← 수요 없음
+```
+
+> 플레이스홀더: 현재 mode는 항상 "male" 기준으로 조회. 다수 성별 지원 시 gender별 mode 취합 로직 필요.
+
+### 17-6. 전력 그래프 X축 문제
+
+초기: recharts `XAxis`를 category 타입으로 사용 → timestamp 문자열이 카테고리 값 취급 → 데이터 있는 구간만 X축에 표시됨.
+
+**수정**: `type="number"`, `scale="time"`, `domain=[domainStart, domainEnd]`로 전환.
+
+```tsx
+<XAxis
+  dataKey="ts"
+  type="number"
+  scale="time"
+  domain={[domainStart, domainEnd]}
+  ticks={ticks}           // 3시간마다 tick
+  tickFormatter={fmtHHMM}
+/>
+```
+
+미래 구간 선 방지: 데이터 배열 끝에 `{ ts: domainEnd, power: null }` 추가 + `connectNulls={false}`.
+
+```tsx
+const chartData = [
+  { ts: domainStart, power: null },   // 시작 anchor
+  ...data.map(d => ({ ts: new Date(d.timestamp).getTime(), power: d.power_w })),
+  { ts: domainEnd, power: null },     // 끝 anchor — 미래 선 방지
+]
+```

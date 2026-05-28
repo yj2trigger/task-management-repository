@@ -4,7 +4,7 @@
 
 **기간:** 2025년 5월  
 **역할:** 풀스택 단독 개발  
-**상태:** 프로토타입 완성, IoT 연동 예정
+**상태:** 운영 중 — SmartThings 전력 수집 포함
 
 ---
 
@@ -23,7 +23,7 @@
 
 | 모드 | 상황 | 동작 |
 |------|------|------|
-| **Mode A** | 여유 (available 多) | 사용자가 층/번호 직접 선택 |
+| **Mode A** | 여유 (available 多) | 층별 이용 가능 세탁기 수 표시, 직접 이동 |
 | **Mode B** | 경쟁 (available 少) | 시스템이 세탁기 자동 배정, 10분 소프트 예약 |
 | **Mode C** | 만원 (available 0) | 대기열 등록 → 빈 세탁기 발생 시 **5분 수락 대기** → 수락 시 10분 소프트 예약 |
 
@@ -36,13 +36,22 @@
 
 ### 실시간 업데이트
 
-WebSocket으로 세탁기 상태 변경 즉시 반영 (polling 없음).  
+WebSocket으로 세탁기 상태 변경 즉시 반영.  
 성별별 채널 분리 (남자/여자 기숙사 구역).
+
+### SmartThings IoT 전력 수집
+
+SmartThings powerMeter 센서를 주기적으로 polling → 전력값 DB 누적 → 관리자 전력 그래프.  
+ADR-007: 이용 가능 세탁기가 적을수록 polling 빈도 높임 (Mode C=60s, B=120s, A=480s).
+
+### 관리자 전력 그래프
+
+어드민 페이지에서 세탁기별 24h 전력 이력 그래프 (recharts).  
+60초 자동 갱신, 00:00~23:59 전체 X축, 측정 없는 미래 구간 선 없음.
 
 ### 소프트 예약 복원
 
-페이지 새로고침 후에도 `GET /machines/my-reservation`으로 활성 예약을 복원.  
-예약 유효 시간 카운트다운 10분 내내 화면에 표시.
+페이지 새로고침 후에도 `GET /machines/my-reservation`으로 활성 예약을 복원.
 
 ### 이메일 인증
 
@@ -50,12 +59,7 @@ WebSocket으로 세탁기 상태 변경 즉시 반영 (polling 없음).
 
 ### 어드민 패널
 
-세탁기 상태 수동 관리, 대기열 알림 트리거.
-
-### IoT 연동 (엔드포인트 준비 완료)
-
-실제 세탁기 센서 → `POST /iot/machines/{id}/status` → 자동 상태 반영.  
-현재: 장치 연결 대기 중. curl/Postman으로 동작 확인 완료.
+세탁기 상태 수동 관리, 대기열 알림 트리거, 전력 그래프, 전력 임계값 설정.
 
 ---
 
@@ -67,6 +71,7 @@ Backend   FastAPI (Python 3.12) + SQLAlchemy       → Fly.io (Docker)
 Database  PostgreSQL                               → Supabase
 실시간    WebSocket (FastAPI native)
 인증      JWT (7일) + bcrypt + Gmail SMTP OTP
+IoT       SmartThings Cloud API (httpx, asyncio polling)
 ```
 
 ---
@@ -81,6 +86,7 @@ Database  PostgreSQL                               → Supabase
 | [ADR-004](decisions/ADR-004-auth-email.md) | Gmail SMTP | Resend 무료 플랜 외부 도메인 발송 불가 |
 | [ADR-005](decisions/ADR-005-iot-design.md) | REST Webhook 선설계 | 장치 없이도 엔드포인트 완성, curl 테스트 가능 |
 | [ADR-006](decisions/ADR-006-queue-acceptance-window.md) | 5분 수락 대기 | 즉시 배정 시 알림 놓친 사용자 10분 낭비 방지 |
+| [ADR-007](decisions/ADR-007-smartthings-adaptive-polling.md) | SmartThings 적응형 polling | 수요 높을수록 빈도 높임, 야간 절전 |
 
 ---
 
@@ -89,19 +95,19 @@ Database  PostgreSQL                               → Supabase
 | 사고 | 원인 | 해결 |
 |------|------|------|
 | [Mode B 배정 결과 즉시 사라짐](postmortems/2025-05-25-mode-b-result-disappear.md) | 모드 변경 → 컴포넌트 언마운트 → 로컬 상태 소멸 | `modeBResult` 부모로 lift up |
-| [Vercel TS 빌드 에러 → 백엔드 배포 차단](postmortems/2025-05-25-vercel-typescript-build.md) | `needs` 의존성으로 프론트 실패 시 백엔드도 차단 | props 타입 수정 (의도된 차단으로 판단) |
+| [Vercel TS 빌드 에러 → 백엔드 배포 차단](postmortems/2025-05-25-vercel-typescript-build.md) | `needs` 의존성으로 프론트 실패 시 백엔드도 차단 | props 타입 수정 |
 | [모바일 가로 스크롤 오버플로우](postmortems/2025-05-25-mobile-overflow.md) | 고정 픽셀 너비 + `box-sizing` 미설정 | `max-width` + `box-sizing: border-box` |
-| [소프트 예약 배너 즉시 소멸](postmortems/2025-05-26-reservation-banner-invisible.md) | timezone-naive datetime → JS 로컬 해석 → 9시간 차이 → 즉시 만료 | `asUtc()` 헬퍼로 UTC 강제 파싱 |
-| [대기열 notified 상태 새로고침 소멸](postmortems/2025-05-26-queue-notified-status-lost.md) | `/queue/status`가 `waiting`만 조회 → `notified` 사용자 `in_queue=False` 반환 | `get_entry()` 변경 + `is_notified`/`accept_until` 필드 추가 |
-| SQLite naive/aware TypeError (테스트) | `DateTime(timezone=True)` 컬럼도 SQLite는 naive datetime 반환 → UTC 비교 시 TypeError | `if exp.tzinfo is None: exp = exp.replace(tzinfo=timezone.utc)` guard 추가 |
-| Alembic `%` 보간 오류 | `DATABASE_URL`의 `%40`를 configparser가 보간 문법으로 해석 | `config.set_main_option()` 우회, `create_engine()` 직접 사용 |
-| Supabase IPv6 DNS 실패 | Direct Connection URL(`db.xxx.supabase.co`)이 IPv6 전용 → 로컬 네트워크 미지원 | Session Pooler URL(`pooler.supabase.com`)로 전환 |
+| [소프트 예약 배너 즉시 소멸](postmortems/2025-05-26-reservation-banner-invisible.md) | timezone-naive datetime → JS 로컬 해석 → 9시간 차이 | `asUtc()` 헬퍼 + TIMESTAMPTZ 마이그레이션 |
+| [대기열 notified 상태 새로고침 소멸](postmortems/2025-05-26-queue-notified-status-lost.md) | `/queue/status`가 `waiting`만 조회 | `get_entry()` 변경 + `is_notified` 필드 추가 |
+| SmartThings polling INFO 로그 미표시 | Python root logger 기본값 WARNING → `logger.info()` 무시 | `logging.getLogger("app").setLevel(INFO)` |
+| SmartThings polling 루프 중단 | DB 오류 시 `while True` 전체 중단 | 각 단계 독립 try/except |
+| Fly.io 시크릿 자동 전파 실패 | `flyctl secrets deploy` 머신 없을 때 오류 | `flyctl secrets set` + GitHub Actions 전파 |
 
 ---
 
 ## 상세 문서
 
-- [아키텍처](architecture.md) — 전체 구성, 데이터 모델, WS 이벤트 흐름
+- [아키텍처](architecture.md) — 전체 구성, 데이터 모델, WS 이벤트 흐름, SmartThings polling
 - [보안 설계](security.md) — JWT, OTP, IoT Device Key, CORS
 - [문제 정의](problem_statement.md) — 배경, 사용 시나리오, 제약
 
@@ -131,11 +137,11 @@ npm run dev
 
 | 항목 | 내용 |
 |------|------|
-| **브랜치 전략** | `feature/* → develop → main` (GitHub Flow 변형) |
-| **Branch Protection** | main/develop 모두 PR 필수, CI 통과 필수, 관리자 bypass 허용 |
-| **CI** | pytest + vitest — feature PR마다 자동 실행 |
-| **CD** | main push 시에만 Fly.io + Vercel 자동 배포 |
-| **ONBOARDING.md** | 환경 구성, API 명세, WebSocket 이벤트, 브랜치 전략 전체 문서화 |
+| **브랜치 전략** | `feature/* → main` (GitHub Flow) |
+| **Branch Protection** | main PR 필수, CI 통과 필수, 관리자 bypass 허용 |
+| **CI** | pytest + vitest — PR마다 자동 실행 |
+| **CD** | main push 시 Fly.io + Vercel 자동 배포 + Fly.io 시크릿 자동 전파 |
+| **ONBOARDING.md** | 환경 구성, API 명세, WebSocket 이벤트, 브랜치 전략 문서화 |
 | **Alembic** | DB 스키마 변경 이력 관리, Supabase 적용 완료 |
 
 ---
@@ -151,23 +157,26 @@ npm run dev
 
 **Datetime timezone 계약:**  
 백엔드-프론트 간 datetime 교환 시 항상 `Z` 또는 `+00:00` 명시 필요.  
-SQLAlchemy `DateTime` vs `DateTime(timezone=True)` 차이를 초기에 결정해야 함.  
-JS `new Date("...")` 는 timezone 없으면 로컬 시간으로 해석 → 서버 UTC와 최대 ±12시간 차이.  
+SQLAlchemy `DateTime(timezone=True)` → PostgreSQL TIMESTAMPTZ → ISO 8601 직렬화.  
 테스트 DB(SQLite)와 프로덕션 DB(PostgreSQL)의 timezone 처리 방식 차이 → naive/aware guard 필수.
 
 **IoT 선설계 패턴:**  
-장치 없이 엔드포인트 먼저 설계 → curl로 검증 → 장치 연결 시 URL+Key만 설정.  
-`IOT_DEVICE_KEY` 미설정 시 503 → Graceful degradation.
+장치 없이 엔드포인트 먼저 설계 → curl로 검증 → 장치 연결 시 URL+Key만 설정.
+
+**Python logging 레벨:**  
+`logging.basicConfig()` 없으면 root logger가 WARNING → `logger.info()` 전부 무시.  
+프로덕션 진단 로그가 필요하면 앱 시작 시 명시적으로 레벨 설정 필수.
+
+**SmartThings polling 내결함성:**  
+`while True` 루프에서 DB 오류 한 번이 전체 루프를 중단시킴.  
+각 단계(mode 조회, threshold 조회, 전력 조회, DB 저장, 상태 변경)를 독립 try/except로 격리.
 
 **상태 복원 패턴:**  
-React state는 새로고침 시 소멸 → 서버 API로 복원 (`GET /machines/my-reservation`).  
-"이 상태가 새로고침 후에도 살아있어야 하는가" 를 설계 시 고려.
+React state는 새로고침 시 소멸 → 서버 API로 복원 (`GET /machines/my-reservation`).
 
 **엔티티 상태 추가 시 3-step 체크리스트:**  
-① status API에 새 상태 노출 ② 마운트 시 복원 경로 구현 ③ 상태별 UI 분기 확인.  
-notified 상태 구현 시 복원 누락 → 수락 배너 사라짐, 등록 버튼 잘못 표시.
+① status API에 새 상태 노출 ② 마운트 시 복원 경로 구현 ③ 상태별 UI 분기 확인.
 
 **DB 마이그레이션 설계:**  
 `create_all()`은 테이블 생성만, 컬럼 변경은 추적 불가 → Alembic 필수.  
-URL 특수문자(`%40`)와 configparser 보간 충돌 — URL은 환경변수로만 관리, ini에 직접 쓰지 않는다.  
-Supabase는 Direct URL(IPv6 전용)과 Session Pooler URL(IPv4 지원) 두 개 제공, 로컬 개발에서는 Pooler 사용.
+Supabase는 Direct URL(IPv6)과 Session Pooler URL(IPv4 지원) 두 개 제공.

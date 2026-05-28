@@ -34,10 +34,11 @@
 
 ## [ESG] 운영 개선
 
-- [ ] IoT 실제 연동 — 엔드포인트 준비 완료, 장치 연결 및 `IOT_DEVICE_KEY` 설정 필요
+- [ ] IoT 실제 장치 연결 — SmartThings polling 구현 완료, 실제 세탁기에 센서 부착 필요
 - [ ] 기술부채 #4: `ConnectionManager` 단일 인스턴스 — 다중 서버 인스턴스 시 WS 브로드캐스트 누락 (현재 Fly.io 1대라 잠재적 문제)
 
 ## [ESG] 향후 기능 (프로토타입 이후)
 
+- [ ] 통계 UI — machine_status_logs + machine_power_logs 시간대별 혼잡도 그래프 (데이터 누적 중)
+- [ ] 전력 임계값 어드민 UI — 현재 API만 존재 (`PATCH /admin/settings`)
 - [ ] PWA Push Notification — 백그라운드 알림 (현재 인앱 WS만)
-- [ ] 통계 — `machine_status_logs` 테이블 + 시간대별 혼잡도 API

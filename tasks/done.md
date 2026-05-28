@@ -98,4 +98,18 @@
 - [x] GitHub 협업 설정 — branch protection (main/develop), PR 템플릿, ONBOARDING.md
 - [x] CI workflow: `develope` 오타 수정 → `develop`, PR 트리거 추가
 - [x] CD workflow: develop PR 시 테스트만 실행, deploy는 main push 한정
-- [x] 브랜치 전략 수립 — develop 브랜치 생성, feature → develop → main 흐름
+- [x] 브랜치 전략 수립 — develop 브랜치 제거, feature → main 단순화
+
+## [ESG] IoT 전력 수집 + 어드민 그래프 (2026-05-28)
+
+- [x] SmartThings Cloud API 클라이언트 — `smartthings_client.py` (httpx, powerMeter 조회)
+- [x] SmartThings 적응형 polling — `smartthings_poller.py`, ADR-007 (C=60s, B=120s, A=480s, 야간=900s)
+- [x] MachinePowerLog 모델 + machine_power_log_repo (create, get_history, delete_old 7일)
+- [x] MachineStatusLog 모델 + machine_status_log_repo (상태 변경 이력, source/previous_status/is_running/changed)
+- [x] SystemSettings 모델 + system_settings_repo (key/value_float, power_threshold_w)
+- [x] Alembic migration — `9c4c1dfb2a91_add_machine_status_logs.py`
+- [x] 어드민 API 확장 — GET /admin/machines/{id}/power-history, GET/PATCH /admin/settings
+- [x] 어드민 전력 그래프 — recharts LineChart, 24h X축, 60s 자동갱신, 미래 구간 선 없음
+- [x] main.py — logging INFO 레벨 설정, smartthings_poller 백그라운드 태스크 시작
+- [x] CD workflow — flyctl secrets set SMARTTHINGS_PAT + SMARTTHINGS_DEVICE_01 자동 전파
+- [x] 어드민 상태 버튼 너비 고정 — minWidth: 4.8rem (이용 가능 기준)
