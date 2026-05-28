@@ -1,4 +1,4 @@
-# 📦 Task Management Repository (Meta-Repo)
+#  Task Management Repository (Meta-Repo)
 
 > Claude와 연동하여 여러 프로젝트를 AI로 관리하는 메타-리포지토리입니다.
 
@@ -54,7 +54,7 @@ task-management-repository/
 
 ---
 
-## 🔗 등록된 프로젝트
+##  등록된 프로젝트
 
 | 프로젝트 | 레포지토리 | 현재 상태 |
 |---------|-----------|---------|
@@ -63,13 +63,13 @@ task-management-repository/
 
 ---
 
-## 📌 운영 원칙
+##  운영 원칙
 
 → [AI_HANDOVER.md § 운영 원칙](./AI_HANDOVER.md) 참고
 
 ---
 
-## 🤖 협업 방식 요약
+##  협업 방식 요약
 
 ```
 새 대화 시작 시:
