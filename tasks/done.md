@@ -4,6 +4,16 @@
 
 ---
 
+## [ic-pbl] PR #16 main 머지 완료 (2026-05-29)
+
+- [x] gemini-review.yml ARG_MAX 수정 (`--rawfile` + `-d @file`)
+- [x] gemini-review.yml API key URL 노출 → `x-goog-api-key` 헤더 전환
+- [x] gemini-review.yml `maxOutputTokens` 2048 → 8192
+- [x] PR #17 (`test/gemini-review`) 테스트 후 close
+- [x] PR #16 `develop → main` 머지 (merge commit `e4801d0`)
+
+---
+
 ## [MAP] map-service-user 인증 도메인 + 코드 개선 (2026-05-28)
 
 - [x] Swagger/OpenAPI 완전 제거 → Spring REST Docs 마이그레이션
@@ -95,7 +105,7 @@
 
 - [x] 구현 1~10단계 (2026-05-23~25)
 
-## [ESG] 기능 추가 / 버그 수정 / 기술부체 (2026-05-25)
+## [ESG] 기능 추가 / 버그 수정 / 기술부채 (2026-05-25)
 
 - [x] 대기순번 실시간, PWA, 관리자, 설정, IoT 엔드포인트 등
 - [x] 로딩 버그, 모바일 UI, WS 타입, 대기열 상태, 어드민 알림 수정
