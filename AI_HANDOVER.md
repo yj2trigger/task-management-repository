@@ -1,7 +1,7 @@
 # AI 인계 문서 (AI Handover Guide)
 
 > 작성일: 2026-05-23
-> 최종 갱신: 2026-05-28
+> 최종 갱신: 2026-05-29
 > 목적: 이 문서를 읽은 AI가 현재 진행 중인 작업을 즉시 이어받을 수 있도록 합니다.
 
 ---
@@ -24,8 +24,8 @@
 ## 현재 관리 중인 프로젝트
 
 | 프로젝트 | 레포 | 현재 상태 |
-|---------|------|---------|
-| ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK 전체 구현 완료, PR #16 main 머지 대기 |
+|---------|------|----------|
+| ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK 전체 구현 완료, PR #16 gemini-review 실패로 blocked |
 | ESG | [ESG](https://github.com/yj2trigger/ESG) | 핵심 기능 완료 + 운영 중 |
 | MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | 인증 도메인 구현 완료, 코드 개선 완료 |
 
@@ -57,16 +57,21 @@
 
 ## ic-pbl (EDK) 프로젝트 인계 정보
 
-### 현재 상태: PR #16 main 머지 대기
+### 현재 상태: PR #16 — gemini-review check 실패로 blocked
 
 `pmg-ic-pbl`의 `develop` 브랜치에 EDK 전체 구현이 올라가 있으며, `main` 대상 PR #16이 열려 있습니다.
 
 **GitHub 상태:**
 - PR: https://github.com/yj2trigger/pmg-ic-pbl/pull/16
-- Head: `develop` commit `13857d4`
+- Head: `develop` commit `6fc283c`
 - Base: `main`
-- 상태: `mergeable: true`, `develop` behind 0
-- 로컬 검증: `project/`에서 `python -m pytest` → `198 passed, 6 subtests passed`
+- 상태: `mergeable_state: blocked` — `.github/workflows/gemini-review.yml` check 실패
+- `develop` behind 0
+- 로컬 검증: `project/`에서 `python -m pytest` → `198 passed, 6 subtests passed` (2026-05-27)
+
+**block 원인:**
+`gemini-review.yml` 워크플로가 Gemini API를 호출해 PR 코멘트를 게시하는 구조인데, check run `review`가 `failure`로 완료됨.
+가능한 원인: `GEMINI_API_KEY` secret 만료/미설정, 또는 diff 크기 초과 (PR #16: +2107/-3838, 56 files).
 
 **포함된 작업:**
 - `Medicine`, `Symptom`, `SymptomGroup` 도메인 전환
@@ -80,9 +85,10 @@
 - `stats.py`와 `test_stats.py` Medicine 기준 수정
 
 **다음 작업:**
-1. PR #16 최종 확인
-2. 이상 없으면 main으로 머지
-3. 머지 후 `docs/ic-pbl/CURRENT_STATE.md`와 `tasks/done.md`에 PR #16 머지 완료 반영
+1. `GEMINI_API_KEY` secret 유효 여부 확인 (GitHub repo settings → Secrets)
+2. 유효하다면 diff 크기 문제 — 워크플로에 diff 크기 제한 로직 추가 후 re-run
+3. check 통과 후 PR #16 → main 머지
+4. 머지 후 `docs/ic-pbl/CURRENT_STATE.md`와 `tasks/done.md`에 PR #16 머지 완료 반영
 
 **주의:**
 - `pmg-ic-pbl/docs/`는 이 관리 레포로 이전되어 삭제 유지가 맞습니다.

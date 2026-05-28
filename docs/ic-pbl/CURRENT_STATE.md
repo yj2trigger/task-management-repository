@@ -1,6 +1,6 @@
 # CURRENT_STATE — EDK (ic-pbl)
 
-> Last Update: 2026-05-27
+> Last Update: 2026-05-29
 > 원본 레포: [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl)
 > 현재 통합 PR: [#16 develop → main](https://github.com/yj2trigger/pmg-ic-pbl/pull/16)
 
@@ -10,13 +10,13 @@
 
 **EDK 도메인 전환, PyQt6 GUI 전환, 테스트 재작성, 패키징, 관리자 비밀번호 해시 완료.**
 
-`develop` 브랜치는 `main` 최신 커밋을 병합해 뒤처짐 0 상태이며, PR #16은 `mergeable: true` 상태다.
+`develop` 브랜치는 `main` 최신 커밋을 병합해 뒤처짐 0 상태이며, PR #16은 열려 있으나 **CI 실패로 blocked** 상태다.
 
 ---
 
 ## Current Active Unit
 
-PR #16 최종 검토 및 main 머지 대기.
+PR #16 — gemini-review check 실패 원인 파악 및 해결.
 
 ---
 
@@ -41,23 +41,46 @@ PR #16 최종 검토 및 main 머지 대기.
 
 - 레포: `yj2trigger/pmg-ic-pbl`
 - 브랜치: `develop`
-- 커밋: `13857d4` — `Merge main into develop and fix EDK stats`
+- 커밋: `6fc283c` (head)
 - 실행 위치: `project/`
 - 명령: `python -m pytest`
-- 결과: `198 passed, 6 subtests passed`
+- 결과: `198 passed, 6 subtests passed` (2026-05-27 기준)
+
+---
+
+## PR #16 현재 상태
+
+| 항목 | 값 |
+|------|-----|
+| state | open |
+| mergeable_state | **blocked** |
+| head commit | `6fc283c` |
+| behind main | 0 |
+| check: review | ❌ failure (2026-05-27T21:41:22Z) |
+
+**block 원인:** `.github/workflows/gemini-review.yml` — `review` check 실패.
+
+워크플로 동작:
+1. `git diff base...head` → `diff.txt`
+2. Gemini 2.5 Flash Lite API 호출 (`GEMINI_API_KEY` secret 필요)
+3. 리뷰 결과를 PR 코멘트로 게시
+
+가능한 실패 원인:
+- `GEMINI_API_KEY` secret 미설정 또는 만료
+- diff 크기 초과 (PR #16: +2107/-3838, 56 files — Gemini 요청 본문 너무 큼)
 
 ---
 
 ## 알려진 상태
 
-- PR #16은 열려 있고 머지 가능하다.
-- GitHub status API 기준 커밋 status는 비어 있다. 별도 필수 CI status는 확인되지 않았다.
+- PR #16은 열려 있고 코드 자체는 머지 가능하나, gemini-review check 실패로 `mergeable_state: blocked`.
 - `pmg-ic-pbl/docs/`는 관리 레포 문서로 이전되어 삭제 유지가 맞다.
 
 ---
 
 ## 다음 권장 작업
 
-1. PR #16을 최종 확인한다.
-2. 문제가 없으면 `main`으로 머지한다.
-3. 머지 후 이 문서와 `tasks/done.md`에 PR #16 머지 완료를 반영한다.
+1. gemini-review 실패 원인 확인 (`GEMINI_API_KEY` secret 유효 여부, diff 크기 제한).
+2. 필요 시 워크플로 수정 후 re-run, 또는 branch protection에서 해당 check를 required 해제.
+3. check 통과 후 `main`으로 머지.
+4. 머지 후 이 문서와 `tasks/done.md`에 PR #16 머지 완료를 반영.
