@@ -16,7 +16,7 @@
 
 ## Current Active Unit
 
-PR #16 — gemini-review check 실패 원인 파악 및 해결.
+PR #16 — gemini-review.yml 워크플로 수정 후 re-run.
 
 ---
 
@@ -60,14 +60,33 @@ PR #16 — gemini-review check 실패 원인 파악 및 해결.
 
 **block 원인:** `.github/workflows/gemini-review.yml` — `review` check 실패.
 
-워크플로 동작:
-1. `git diff base...head` → `diff.txt`
-2. Gemini 2.5 Flash Lite API 호출 (`GEMINI_API_KEY` secret 필요)
-3. 리뷰 결과를 PR 코멘트로 게시
+### 실패 원인 분석
 
-가능한 실패 원인:
-- `GEMINI_API_KEY` secret 미설정 또는 만료
-- diff 크기 초과 (PR #16: +2107/-3838, 56 files — Gemini 요청 본문 너무 큼)
+`GEMINI_API_KEY`는 기존에 정상 동작한 기록 있음 → API 키 문제 아님.
+
+**근본 원인: Linux `ARG_MAX` 초과.**
+
+워크플로 문제 코드:
+```bash
+DIFF=$(cat diff.txt)
+PROMPT="...${DIFF}"
+PAYLOAD=$(jq -n --arg text "$PROMPT" ...)  # ← 여기서 실패
+```
+
+`--arg text "$PROMPT"` 는 diff 전체를 shell argument로 전달한다.
+Linux `ARG_MAX` 한계는 약 2MB인데, PR #16은 +2107/-3838 lines, 56 files — 이 크기면 초과 가능.
+`jq` 가 `Argument list too long` 오류로 exit 1 → check failure.
+
+**수정 방법:** `jq --rawfile`로 파일 직접 읽기 (ARG_MAX 우회):
+```bash
+# 변경 전
+PAYLOAD=$(jq -n --arg text "$PROMPT" '{"contents":[{"parts":[{"text":$text}]}],...}')
+
+# 변경 후
+printf '%s\n\nDiff:\n' "You are a senior code reviewer. ..." > prompt.txt
+cat diff.txt >> prompt.txt
+PAYLOAD=$(jq -n --rawfile text prompt.txt '{"contents":[{"parts":[{"text":$text}]}],...}')
+```
 
 ---
 
@@ -80,7 +99,7 @@ PR #16 — gemini-review check 실패 원인 파악 및 해결.
 
 ## 다음 권장 작업
 
-1. gemini-review 실패 원인 확인 (`GEMINI_API_KEY` secret 유효 여부, diff 크기 제한).
-2. 필요 시 워크플로 수정 후 re-run, 또는 branch protection에서 해당 check를 required 해제.
+1. `pmg-ic-pbl/.github/workflows/gemini-review.yml` — `--arg text "$PROMPT"` → `--rawfile text prompt.txt` 방식으로 수정.
+2. `develop` 브랜치에 커밋 → PR #16 자동 re-run.
 3. check 통과 후 `main`으로 머지.
-4. 머지 후 이 문서와 `tasks/done.md`에 PR #16 머지 완료를 반영.
+4. 머지 후 이 문서와 `tasks/done.md`에 PR #16 머지 완료 반영.
