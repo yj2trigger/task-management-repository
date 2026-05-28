@@ -40,5 +40,6 @@
 ## [ESG] 향후 기능 (프로토타입 이후)
 
 - [ ] 통계 UI — machine_status_logs + machine_power_logs 시간대별 혼잡도 그래프 (데이터 누적 중)
+- [ ] 통계 기반 적응형 polling 개선 — machine_power_logs 이력으로 시간대별 평균 전력 변화 분석 → 야간/주간 경계 자동 보정, power_threshold_w 자동 제안 (ADR-007 확장)
 - [ ] 전력 임계값 어드민 UI — 현재 API만 존재 (`PATCH /admin/settings`)
 - [ ] PWA Push Notification — 백그라운드 알림 (현재 인앱 WS만)
