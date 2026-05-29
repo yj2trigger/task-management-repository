@@ -1,15 +1,15 @@
 # CURRENT_STATE — ESG (기숙사 세탁기 예약 서비스)
 
-> Last Update: 2026-05-26
+> Last Update: 2026-05-30
 > 원본 레포: [yj2trigger/ESG](https://github.com/yj2trigger/ESG)
 > 전체 설계 문서: [full_plan.md](./full_plan.md)
 > 상세 기술 명세 (API · 파일 구조 · 배포): [portfolio/ESG/architecture.md](../../portfolio/ESG/architecture.md)
 
 ---
 
-## 🟢 현재 단계
+## 현재 단계
 
-**핵심 기능 전체 완료 + 운영 중 (Fly.io + Supabase + Vercel)**
+**핵심 기능 전체 완료 + 운영 중 (Fly.io + Supabase + Vercel) + SmartThings IoT 부분 연동 중**
 
 ---
 
@@ -33,36 +33,60 @@
 | 4. 세탁기 상태 조회 (Mode A/B/C) | ✅ | ✅ |
 | 5. Mode B 소프트 예약 + Mode C 대기열 | ✅ | ✅ |
 | 6. WebSocket 실시간 연결 | ✅ | ✅ |
-| 7. Docker Compose 로컬 실행 | ✅ | ✅ |
+| 7. Docker Compose 로컈 실행 | ✅ | ✅ |
 | 8. CI/CD (GitHub Actions → Fly.io + Vercel) | ✅ | ✅ |
 | 9. 운영 고려사항 (rate limit, soft_reserve 중복 방지) | ✅ | — |
 | 10. 이메일 인증 (@hanyang.ac.kr + 6자리 OTP) | ✅ | ✅ |
 | 11. 대기 순번 실시간 표시 (WS queue_position_updated) | ✅ | ✅ |
 | 12. 모바일 PWA (standalone + Fullscreen API) | — | ✅ |
-| 13. 관리자 페이지 (세탁기 상태 변경) | ✅ | ✅ |
+| 13. 관리자 페이지 (세탁기 상태 변경 + 전력 그래프) | ✅ | ✅ |
 | 14. 비밀번호 / 아이디 변경 (설정 페이지) | ✅ | ✅ |
 | 15. IoT 신호 수신 엔드포인트 | ✅ | — |
-| 16. Tuya Cloud 크레덴셜 확보 | ✅ | — |
-| 17. DB Quota 관리 계획 수립 | ✅ | — |
+| 16. SmartThings 연동 (PAT + 주기적 전력 polling) | ✅ | — |
+| 17. DB Quota 관리 (전력 로그 30일 보존) | ✅ | — |
+| 18. 소프트 예약 → 이용 중 자동 전환 + machine_started 알림 | ✅ | ✅ |
+| 19. IoT 감지 임계값 히스테리시스 (10W 시작 / 5W 정지) | ✅ | — |
+| 20. per-machine 스케줄러 (우선 3대 fast / 나머지 slow) | ✅ | — |
+| 21. PollingInfoBar (IoT 감지 주기 + 다음 갱신 카운트다운) | — | ✅ |
+| 22. 관리자 페이지 WS 실시간 + 10초 폴링 자동 갱신 | ✅ | ✅ |
+| 23. broken 상태 IoT 자동 전환 차단 | ✅ | — |
 
 ---
 
-## 알려진 이슈 / 해결된 버그
+## IoT 연동 현황 (SmartThings)
+
+**플랫폼:** Samsung SmartThings (PAT 방식, Fly.io 시크릿)
+
+| 항목 | 내용 |
+|------|------|
+| 연동 기기 | 세탁기 1대 (`SMARTTHINGS_DEVICE_1`) |
+| 시작 임계값 | 10W (급수 밸브 15~30W 캐치) |
+| 정지 임계값 | 5W (사이클 중간 정지 3~15W 오판단 방지) |
+| Polling 기본 주기 | 120초 (일반) / 60초 (우선 기기) |
+| 우선 기기 로직 | Mode A: 층별 유일 available 우선, 부족 시 다른 available로 채움 |
+| | Mode B: available 세탁기 자체 fast |
+| | Mode C: soft_reserved 세탁기 fast |
+| 전력 로그 보존 | 30일 |
+| 현재 이슈 | PAT 인증 오류 간헐적 발생 — Fly.io secret 갱신 필요 |
+
+**SSOT 원칙:** threshold는 `fly.toml [env]`가 원본. config.py는 로컈 dev 기본값. DB system_settings 미사용.
+
+---
+
+## 해결된 버그 (2026-05-29~30)
 
 | 이슈 | 상태 |
 |------|------|
-| 대시보드 로딩 무한 (WS 업데이트마다 깜박임) | ✅ data 있으면 loading 화면 미표시 |
-| Resend 무료 플랜 외부 도메인 발송 불가 | ✅ Gmail SMTP 전환 |
-| Vercel working-directory 이중 적용 | ✅ 제거로 해결 |
-| WsMessage TypeScript 타입 누락 (queue_position_updated) | ✅ 수정 |
-| 모바일 horizontal overflow | ✅ boxSizing: border-box 적용 |
-| Mode B 배정 후 결과 즉시 사라짐 | ✅ modeBResult 상위 상태로 올림 |
-| Mode C 대기 중 모드 B 전환 시 대기 상태 소멸 | ✅ queueInfo 상위 상태로 올림 |
-| Mode B/C 뷰 동시 표시 (대기 중 + 사용 버튼) | ✅ queueInfo 있으면 Mode B/A 뷰 숨김 |
-| 어드민 available 전환 시 큐 알림 미발송 | ✅ _notify_queue_and_broadcast 연결 |
+| soft_reserved + 전력 낙음 → available 강제 전환 버그 | ✅ 예약 유지로 수정 |
+| _last_states 또는 DB 불일치 시 상태 교정 안 됨 | ✅ 항상 _apply_state_change 호출로 수정 |
+| AdminPage THRESHOLD_W=100 하드코딩 | ✅ GET /admin/settings 동적 로드로 수정 |
+| fly.toml [env] POWER_THRESHOLD_W=100 오버라이드 | ✅ 10으로 수정 (SSOT 교정) |
+| AdminPage 머신 목록 배포 후 자동 갱신 안 됨 | ✅ WS 구독 + 10초 폴링 추가 |
+| SmartThings 타임아웃 10초 초과 시 복구 불가 | ✅ 30초로 연장 |
+| broken 기기 IoT 전력 감지 시 in_use 자동 전환 | ✅ broken 상태 보호 추가 |
+| GitHub Actions Node.js 20 디프리케이션 | ✅ 24로 업그레이드 |
+| 대시보드 로딩 무한 (이전에 해결) | ✅ data 있으면 loading 화면 미표시 |
 | React StrictMode WS 1006 disconnect | 미해결 (두 번째 연결 정상 동작) |
-
-주요 사고 상세 분석 → [portfolio/ESG/postmortems/](../../portfolio/ESG/postmortems/)
 
 ---
 
@@ -70,12 +94,10 @@
 
 | 항목 | 내용 |
 |------|------|
-| `in_use` 자동 해제 | 없음 — 어드민 수동 또는 IoT 연동 필요 |
-| IoT 실제 연동 | 엔드포인트 준비 완료, Tuya 크레덴셜 확보 — 장치 물리 연결 대기 — [ADR-007](../../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md) |
-| Tuya 설정 | Smart Home 프로젝트 생성 완료, Link Tuya App Account + QR 연동 절차 확립, China 데이터센터 선택 — [13단계](./full_plan.md) |
-| Tuya API quota | 26,000 호출/월 (무료) — Adaptive polling으로 17,460/월 예상 (quota 67%) — [ADR-007](../../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md) |
-| IoT 확장 | Tuya WiFi 16A (프로토타입) → 30대 초과 또는 간섭 시 Zigbee 전환 예정 |
+| SmartThings PAT 안정성 | 401 오류 간헐적 발생 — PAT 유효기한 없음이나 Fly.io secret 번것 수동 교체 필요 |
+| IoT 기기 확장 | 현재 1대 연동 — `SMARTTHINGS_DEVICE_2` 등 추가로 확장 가능 |
+| in_use 자동 해제 | 없음 — IoT 전력 낙음 시에만 available 전환 |
 | PWA Push Notification | WebSocket 인앱 알림만 — 백그라운드 미지원 |
-| DB Quota 관리 | Supabase 500MB 무료 한도 — IoT 연동 후 machine_status_logs 급증 예상 — 30일 자동 정리 + Gmail 알림 계획 수립 완료 — [14단계](./full_plan.md) |
-| 통계 | `machine_status_logs` 미구현 |
+| DB Quota 관리 | Supabase 500MB 무료 한도 — 전력 로그 30일 자동 정리 적용 중 |
+| 통계 분석 | machine_power_logs 수집 중 — 요일·시간대별 펨러링 기능 미구현 |
 | Alembic 마이그레이션 | 미적용 (`create_all()` 사용 중) |
