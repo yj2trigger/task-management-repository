@@ -111,6 +111,9 @@
 
 ### 2.4 기존 코드 재활용 전략
 
+> SSOT: 이 표가 클래스/모듈 단위 재활용 전략의 단일 출처입니다.
+> 파일 단위 재활용 현황은 `CURRENT_STATE.md § 재활용 확정 유닛` 참고.
+
 | 기존 구성요소 | EDK에서의 역할 |
 |-------------|--------------|
 | `Product` (Coffee, Gummy) | `Medicine` — 의약품/영양제 1종 |
@@ -121,6 +124,7 @@
 | `ChangeReserve` | 잔돈 관리 — 그대로 재활용 |
 | `KioskController` | DrugController로 리팩터링 |
 | `DataManager` | 의약품 데이터 JSON 관리 |
+| `gui/main_window.py` | 화면 스택 구조 그대로, 네비게이션 API 수정 |
 | `gui/screens/` | EDK 화면 흐름에 맞게 교체 |
 
 ### 2.5 관리자 기능 목록

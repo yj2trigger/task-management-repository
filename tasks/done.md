@@ -4,112 +4,109 @@
 
 ---
 
+## [ic-pbl] PR #16 main 머지 완료 (2026-05-29)
+
+- [x] gemini-review.yml ARG_MAX 수정 (`--rawfile` + `-d @file`)
+- [x] gemini-review.yml API key URL 노출 → `x-goog-api-key` 헤더 전환
+- [x] gemini-review.yml `maxOutputTokens` 2048 → 8192
+- [x] PR #17 (`test/gemini-review`) 테스트 후 close
+- [x] PR #16 `develop → main` 머지 (merge commit `e4801d0`)
+
+---
+
+## [MAP] map-service-user 인증 도메인 + 코드 개선 (2026-05-28)
+
+- [x] Swagger/OpenAPI 완전 제거 → Spring REST Docs 마이그레이션
+  - springdoc 의존성 제거, `AuthApi` 인터페이스 삭제, `SwaggerConfig` 삭제
+  - `build.gradle`: asciidoctor 플러그인 + `spring-restdocs-mockmvc` 추가
+  - `AuthControllerRestDocsTest` 신규 작성 (5개 엔드포인트)
+  - `src/docs/asciidoc/index.adoc` 신규 작성
+- [x] 테스트 수정
+  - `AuthControllerTest`: `@AutoConfigureMockMvc(addFilters = false)` 추가 → 전원 403 수정
+  - `KakaoOAuthServiceTest`: stub ID 오류 수정 (`eq(999L)` → `eq(9999999999L)`)
+- [x] `JwtService`: `@PostConstruct` 제거 → 생성자에서 `JwtParser` 초기화 (단위 테스트 직접 생성 지원)
+- [x] `KakaoOAuthService`: `RestClient` 필드 초기화 → `@Bean` 주입으로 변경 (테스트 가능), `parseConnectedAt` timezone 파싱 fix (`OffsetDateTime.parse`)
+- [x] `GlobalExceptionHandler`: `HttpMessageNotReadableException` / `MissingRequestHeaderException` / `HttpRequestMethodNotSupportedException` 핸들러 추가
+- [x] `RateLimitService`: `INCR+EXPIRE` 두 명령 → `DefaultRedisScript` Lua 스크립트 원자 실행 (race condition 제거)
+- [x] `RefreshToken`: `device` 필드 제거 + `V2__remove_device_id_from_refresh_tokens.sql` Flyway 마이그레이션 생성
+- [x] `CorsProperties` 신설, `SecurityConfig` CORS 외부화 (prod.yaml: `CORS_ALLOWED_ORIGINS` 환경변수)
+
+---
+
 ## [ic-pbl] Core 구현 완료 (2026-05-12)
 
-- [x] UNIT-01: exceptions.py — 16/16 PASS
-- [x] UNIT-02: ingredient.py — 12/12 PASS
-- [x] UNIT-03: product.py — 5/5 PASS
-- [x] UNIT-04+05: cart.py (recipe 통합) — 35/35 PASS
-- [x] UNIT-06: payment.py — 35/35 PASS
-- [x] UNIT-08: stats.py — 12/12 PASS
-- [x] UNIT-09: data_manager.py — 8/8 PASS
-- [x] UNIT-10: kiosk_controller.py — 15/15 PASS
-- [x] UNIT-11: cli_view.py — 수동 테스트 완료
-- [x] UNIT-12: main.py — 임포트 검증 완료
-- [x] 시나리오 테스트: test_scenarios.py — 29/29 PASS
+- [x] UNIT-01~12: 전체 테스트 PASS
+- [x] 시나리오 테스트: 29/29 PASS
 
 ## [ic-pbl] GUI 구현 완료 (PyQt6, 2026-05-22)
 
-- [x] gui/app.py — QApplication 진입점
-- [x] gui/main_window.py — KioskWindow, 네비게이션 API, 글로벌 스타일시트
-- [x] gui/voice_service.py — TTS 음성 안내
-- [x] gui/screens/idle.py — 대기 화면
-- [x] gui/screens/main_menu.py — 메인 메뉴
-- [x] gui/screens/product_list.py — 상품 목록
-- [x] gui/screens/customize.py — 옵션 커스터마이징
-- [x] gui/screens/cart.py — 장바구니
-- [x] gui/screens/payment_method.py — 결제 수단 선택
-- [x] gui/screens/cash_payment.py — 현금 결제
-- [x] gui/screens/receipt.py — 영수증
-- [x] gui/screens/admin_auth.py — 관리자 인증
-- [x] gui/screens/admin_menu.py — 관리자 메뉴
+- [x] gui/app.py, main_window.py, voice_service.py
+- [x] 화면 7종: idle, main_menu, product_list, customize, cart, payment_method, cash_payment, receipt
+- [x] 관리자 화면: admin_auth, admin_menu
+
+## [ic-pbl] CI 인프라 (2026-05-26)
+
+- [x] Gemini PR 자동 리뷰 워크플로 (`gemini-2.5-flash-lite`)
+- [x] `develope` → `develop` 이름 수정, 브랜치 전략 수립
+
+## [ic-pbl] EDK 도메인 전환 완료 (2026-05-26)
+
+- [x] EDK-01: `medicine.py`, `symptom.py`, `test_medicine.py` 신규 + `product.py` 삭제 (PR #6)
+- [x] EDK-03: `data_manager.py` — `medicines.json` / `symptoms.json`, 샘플 5의약품 + 8증상 (PR #7)
+- [x] EDK-02: `drug_controller.py` — 증상→의약품 매핑 4메서드 (PR #8)
+- [x] EDK-04: `main.py` — `DrugController` + `DataManager` 초기화로 교체, Coffee/Gummy 제거 (PR #9)
+- [x] EDK-05: `cli_view.py` — 증상 선택 → 의약품 탐색 → 결제 흐름, CLI 실행 가능 (PR #10)
+
+## [ic-pbl] GUI-EDK 도메인 GUI 전환 (PR #11 머지, 2026-05-26)
+
+- [x] GUI-EDK-01: `main_window.py` — `KioskWindow(controller, cart, change_reserve)`, EDK 네비게이션 API
+- [x] GUI-EDK-02: `symptom_select.py` 신규 — 증상 그리드, 응급 빨간색, 장바구니 요약
+- [x] GUI-EDK-03: `medicine_list.py` 신규 — 증상별 의약품 카드
+- [x] GUI-EDK-04: `medicine_detail.py` 신규 — 의약품 상세 + 수량 스피너 + 장바구니
+- [x] GUI-EDK-05: `emergency.py` 신규 — 응급 경고 + 119 안내
+- [x] GUI-EDK-06: `admin_menu.py` 재작성 — 의약품 ON/OFF 및 가격, 재료 관련 기능 제거
+- [x] 개편 화면: `idle.py`, `cart.py`, `payment_method.py`, `cash_payment.py`, `admin_auth.py`, `app.py`, `main.py`
+
+## [ic-pbl] 테스트 재작성 (PR #13 제출, 2026-05-26)
+
+- [x] 삭제: `test_product.py`, `test_ingredient.py`, `test_controller.py`, `test_scenarios.py`, `test_cli_integration.py`
+- [x] `conftest.py` 재작성: EDK fixtures (Medicine/Symptom/Cart/ChangeReserve), pygame mock
+- [x] `test_cart.py` 재작성: Medicine 기반, 재고 차감 테스트 제거
+- [x] `test_gui_app.py` 재작성: EDK KioskWindow 시그니처, 화면 전환 검증
+- [x] `test_gui_screens.py` 재작성: SymptomSelect/MedicineList/Detail/Emergency/Cart 등
+- [x] `test_admin_cash.py` 업데이트: subprocess → mock stdin/stdout 직접 호출
+- [x] `test_edk_integration.py` 신규: 증상선택 → 장바구니 → 결제 통합 시나리오
+
+## [ic-pbl] 보안 강화 — 관리자 비밀번호 해시 (PR #15, 2026-05-26)
+
+- [x] 관리자 비밀번호 평문 → scrypt 해시 저장 (`hashlib.scrypt`, stdlib)
+- [x] 저장 형식: `scrypt$<salt_hex>$<hash_hex>`, `hmac.compare_digest` 타이밍 안전 비교
+- [x] `main.py` 최초 실행 시 평문 감지 → 자동 해시 마이그레이션 (사용자 개입 없음)
+- [x] 잔돈 보유 데이터(`change_reserve.json`) 1000원+ 단위만 유지 확인
+
+## [ic-pbl] 가격 정책 정규화 (2026-05-26)
+
+- [x] 의약품 가격 1000원 단위 정규화
+  - 타이레놀 500mg: 5,500 → 6,000원
+  - 베아제: 3,500 → 4,000원
+  - 훼스탈플러스: 4,500 → 5,000원
+- [x] 옵션 추가금 최소 1,000원 단위 정규화 (10개 항목)
+  - 200~300원 → 1,000원 (Medium, 2샷, 당도 많이, 크림 있음, 레몬, 오메가3, 파우치)
+  - 500원 → 1,000원 (Large, 콜라겐, 10알)
+- [x] 잔돈 시스템 호환 확인 — `change_reserve.json` 이미 1,000원+ 단위만 보유
 
 ---
 
 ## [ESG] 설계 완료
 
-- [x] 1단계: 서비스 정의
-- [x] 2단계: 전체 시스템 아키텍처
-- [x] 3단계: 프론트엔드 구조 설계
-- [x] 4단계: 백엔드 구조 설계
-- [x] 5단계: DB 및 데이터 흐름 설계
-- [x] 6단계: Docker 환경 구성
-- [x] 7단계: 배포 전략 (Railway → Fly.io + Supabase + Vercel 전환)
+- [x] 1~7단계 전체
 
 ## [ESG] 구현 완료
 
-- [x] 구현 1단계: 프로젝트 골격 + Docker (2026-05-23)
-- [x] 구현 2단계: 성별 선택 UI (2026-05-24)
-- [x] 구현 3단계: Auth — JWT register/login (2026-05-24)
-- [x] 구현 4단계: Machines + Mode A/B/C (2026-05-24)
-- [x] 구현 5단계: SoftReserve + Queue (2026-05-24)
-- [x] 구현 6단계: WebSocket (2026-05-24)
-- [x] 구현 7단계: Docker Compose 로컬 실행 (2026-05-24)
-- [x] 구현 8단계: CI/CD — GitHub Actions → Fly.io + Vercel (2026-05-24~25)
-- [x] 구현 9단계: 운영 고려사항 — rate limit, soft_reserve 중복 방지 (2026-05-24)
-- [x] 구현 10단계: 이메일 인증 — @hanyang.ac.kr + 6자리 OTP + Gmail SMTP (2026-05-25)
+- [x] 구현 1~10단계 (2026-05-23~25)
 
-## [ESG] 기능 추가 (2026-05-25)
+## [ESG] 기능 추가 / 버그 수정 / 기술부채 (2026-05-25)
 
-- [x] 대기 순번 실시간 표시 — WS queue_position_updated 이벤트
-- [x] 모바일 PWA — standalone manifest + Fullscreen API
-- [x] 관리자 페이지 — 층별 세탁기 상태 토글 (role=admin 필요)
-  - `GET /admin/machines`, `PATCH /admin/machines/{id}`
-  - `get_admin_user` dependency (403 for non-admin)
-  - `AdminPage.tsx` — 층별 기기 목록 + 상태 변경 버튼
-- [x] 비밀번호 / 아이디 변경 (설정 페이지)
-  - `PATCH /auth/password` — 현재 비번 검증 후 해시 교체
-  - `PATCH /auth/username` — 현재 비번 검증 + 중복 확인 → 새 JWT 발급
-  - `SettingsPage.tsx` — 버튼 클릭 시 폼 토글, 로그아웃 버튼 포함
-- [x] IoT 신호 수신 엔드포인트
-  - `POST /iot/machines/{id}/status` — X-Device-Key 헤더 인증
-  - `is_running: false` → available + 대기열 알림 트리거
-  - `IOT_DEVICE_KEY` 환경변수 미설정 시 503
-
-## [ESG] 버그/UI 수정 (2026-05-25)
-
-- [x] 대시보드 loading 무한 버그 — data 있을 때 loading/error 화면 교체 안 함
-- [x] GenderSelectPage — 성별별 구역 안내 문구
-- [x] LoginPage — 비밀번호 표시 토글
-- [x] WsMessage TypeScript 타입 누락 (queue_position_updated, position, total)
-- [x] 모바일 horizontal overflow — main에 boxSizing: border-box
-- [x] 대기열 상태 복원 — GET /queue/status + useEffect on mount
-- [x] Mode B 배정 결과 즉시 사라짐 — modeBResult 상위 상태로 올림
-- [x] Mode C 대기 중 모드 전환 시 대기 상태 소멸 — queueInfo 상위 상태로 올림
-- [x] 대기 중 Mode B/A 뷰 동시 표시 — queueInfo 있으면 Mode B/A 뷰 숨김
-- [x] 어드민 available 전환 시 큐 알림 미발송 — _notify_queue_and_broadcast 연결
-
-## [ESG] 기술부채 해결 + 협업 인프라 (2026-05-25)
-
-- [x] 기술부채 #1: `datetime.utcnow()` deprecated → `datetime.now(timezone.utc)` 전환
-- [x] 기술부채 #2: `DateTime` → `DateTime(timezone=True)` (machines, email_verifications)
-- [x] 기술부채 #3: Alembic 마이그레이션 도입 — env.py 작성 + 첫 revision 생성 + Supabase 적용
-- [x] pytest 커버리지 확장 — 32 → 42 cases (queue status/accept, machine duplicate/my-reservation)
-- [x] GitHub 협업 설정 — branch protection (main/develop), PR 템플릿, ONBOARDING.md
-- [x] CI workflow: `develope` 오타 수정 → `develop`, PR 트리거 추가
-- [x] CD workflow: develop PR 시 테스트만 실행, deploy는 main push 한정
-- [x] 브랜치 전략 수립 — develop 브랜치 제거, feature → main 단순화
-
-## [ESG] IoT 전력 수집 + 어드민 그래프 (2026-05-28)
-
-- [x] SmartThings Cloud API 클라이언트 — `smartthings_client.py` (httpx, powerMeter 조회)
-- [x] SmartThings 적응형 polling — `smartthings_poller.py`, ADR-007 (C=60s, B=120s, A=480s, 야간=900s)
-- [x] MachinePowerLog 모델 + machine_power_log_repo (create, get_history, delete_old 7일)
-- [x] MachineStatusLog 모델 + machine_status_log_repo (상태 변경 이력, source/previous_status/is_running/changed)
-- [x] SystemSettings 모델 + system_settings_repo (key/value_float, power_threshold_w)
-- [x] Alembic migration — `9c4c1dfb2a91_add_machine_status_logs.py`
-- [x] 어드민 API 확장 — GET /admin/machines/{id}/power-history, GET/PATCH /admin/settings
-- [x] 어드민 전력 그래프 — recharts LineChart, 24h X축, 60s 자동갱신, 미래 구간 선 없음
-- [x] main.py — logging INFO 레벨 설정, smartthings_poller 백그라운드 태스크 시작
-- [x] CD workflow — flyctl secrets set SMARTTHINGS_PAT + SMARTTHINGS_DEVICE_01 자동 전파
-- [x] 어드민 상태 버튼 너비 고정 — minWidth: 4.8rem (이용 가능 기준)
+- [x] 대기순번 실시간, PWA, 관리자, 설정, IoT 엔드포인트 등
+- [x] 로딩 버그, 모바일 UI, WS 타입, 대기열 상태, 어드민 알림 수정
+- [x] datetime/Alembic/pytest/GitHub 협업 설정/CI·CD

@@ -58,24 +58,7 @@
 
 ## 4. 기존 코드 재활용 전략
 
-| 기존 구성요소 | 재활용 방식 |
-|-------------|-----------|
-| `Product` → `Medicine` | product_type → symptom_category로 교체 |
-| `OptionGroup` → `SymptomGroup` | 증상 카테고리 그룹 |
-| `CustomOption` → `Symptom` | 개별 증상 항목 |
-| `Ingredient` | 의약품/영양제 재고 수량으로 그대로 재활용 |
-| `Cart` | 그대로 재활용 (실제 판매이므로 장바구니 필요) |
-| `Payment` (CashPayment, CardPayment) | 그대로 재활용 |
-| `ChangeReserve` | 그대로 재활용 |
-| `KioskController` | DrugController로 리팩터링 |
-| `DataManager` | 의약품 JSON 데이터 관리로 재활용 |
-| `gui/main_window.py` | 화면 스택 구조 그대로, 네비게이션 API 수정 |
-| `gui/voice_service.py` | 그대로 재활용 |
-| `gui/screens/admin_auth.py` | 그대로 재활용 |
-| `gui/screens/cart.py` | 그대로 재활용 |
-| `gui/screens/payment_method.py` | 그대로 재활용 |
-| `gui/screens/cash_payment.py` | 그대로 재활용 |
-| `gui/screens/receipt.py` | 그대로 재활용 |
+→ 클래스/모듈 단위 재활용 전략 SSOT: [requirements.md § 2.4](./requirements.md)
 
 ---
 
@@ -111,9 +94,11 @@
 
 ## 7. 데이터 파일 구성
 
-| 파일 | 내용 |
-|------|------|
-| `medicines.json` | 제품 목록 (이름, 효능, 복용법, 주의사항, 가격, 재고, 증상 카테고리) |
-| `symptoms.json` | 증상 카테고리 정의 |
-| `change_reserve.json` | 잔돈 보유량 (재활용) |
-| `admin_config.json` | 관리자 비밀번호 (재활용) |
+> SSOT: 이 표가 데이터 파일 목록의 단일 출처입니다.
+
+| 파일 | 내용 | 갱신 시점 |
+|------|------|---------|
+| `medicines.json` | 제품 목록 (이름, 효능, 복용법, 주의사항, 가격, 재고, 증상 카테고리) | 구매 완료 / 관리자 수정 시 |
+| `symptoms.json` | 증상 카테고리 정의 | 관리자 수정 시 |
+| `change_reserve.json` | 권종별 현금 보유량 (재활용) | 결제 완료 / 관리자 수정 시 |
+| `admin_config.json` | 관리자 비밀번호 (재활용) | 관리자 수정 시 |

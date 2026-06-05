@@ -45,7 +45,7 @@
 ## 세탁기 환경 상세
 
 | 층 | 성별 제한 | 세탁기 수 |
-|----|-----------|-----------|
+|----|-----------|----------|
 | 1~2층 | 공용 (남녀 모두) | 총 9대 |
 | 3층 이상 | 층별 성별 구분 | 각 층 1~2대 |
 
@@ -137,7 +137,7 @@ soft_reserve(machine_id, user_id, duration=10min)
 ### 알림 방식 비교
 
 | 방식 | 장점 | 단점 | 적용 시점 |
-|------|------|------|-----------|
+|------|------|------|----------|
 | WebSocket 인앱 알림 | 구현 단순, 별도 서버 불필요 | 앱 열고 있어야 함 | **프로토타입** |
 | PWA Push Notification | 백그라운드에서도 수신 가능 | HTTPS 필수, Service Worker 복잡 | 실서비스 확장 시 |
 
@@ -512,6 +512,7 @@ backend/
 | GET | `/queue/status` | 현재 대기 상태 조회 (페이지 새로고침 복원용) | 필요 |
 | GET | `/admin/machines` | 전체 세탁기 목록 (관리자용) | admin |
 | PATCH | `/admin/machines/{id}` | 세탁기 상태 변경 + 큐 알림 트리거 | admin |
+| GET | `/admin/system/stats` | DB 사용량 + 시스템 현황 | admin |
 | POST | `/iot/machines/{id}/status` | IoT 장치 신호 수신 (`is_running` bool) | Device Key |
 | WS | `/ws` | 실시간 연결 | JWT 쿼리 파라미터 |
 
@@ -998,6 +999,8 @@ ORDER BY hour;
 | 10단계 | 관리자 페이지 | ✅ 완료 |
 | 11단계 | IoT 연동 준비 | ✅ 완료 |
 | 12단계 | PWA / 모바일 최적화 | ✅ 완료 |
+| 13단계 | IoT — Tuya Cloud 상세 계획 | 🔵 계획 수립 완료, 구현 대기 |
+| 14단계 | DB Quota 관리 및 알림 | 🔵 계획 수립 완료, 구현 대기 |
 
 ---
 
@@ -1042,6 +1045,9 @@ ORDER BY hour;
 | `GMAIL_USER` | Fly.io Secrets | 이메일 인증 발신 계정 |
 | `GMAIL_APP_PASSWORD` | Fly.io Secrets | Gmail 앱 비밀번호 |
 | `IOT_DEVICE_KEY` | Fly.io Secrets | IoT 장치 인증 키 (미설정 시 /iot 비활성화) |
+| `TUYA_CLIENT_ID` | Fly.io Secrets | Tuya Cloud Access ID |
+| `TUYA_CLIENT_SECRET` | Fly.io Secrets | Tuya Cloud Client Secret |
+| `ADMIN_EMAIL` | Fly.io Secrets | DB quota 알림 수신 관리자 이메일 |
 | `CORS_ORIGINS` | Fly.io Secrets | Vercel 프론트 URL |
 | `VITE_API_URL` | Vercel Environment | 백엔드 API URL |
 
@@ -1078,7 +1084,7 @@ fly secrets set IOT_DEVICE_KEY=<랜덤값> --app esg-laundry-checker
 
 ---
 
-## 구현 완료 기능 현황 (2025-05-25 기준)
+## 구현 완료 기능 현황 (2026-05-26 기준)
 
 ### 백엔드
 
@@ -1122,4 +1128,266 @@ fly secrets set IOT_DEVICE_KEY=<랜덤값> --app esg-laundry-checker
 | `in_use` 자동 해제 | 없음 — 어드민 수동 변경 또는 IoT 연동 필요 |
 | Alembic 마이그레이션 | 미적용 (`create_all()` 사용 중) |
 | PWA 백그라운드 알림 | 미구현 (앱 열려 있어야 WS 수신 가능) |
-| IoT 실제 연동 | 엔드포인트 준비 완료, 장치 연결 대기 중 |
+| IoT 실제 연동 | 엔드포인트 준비 완료, Tuya 크레덴셜 확보 — 장치 물리 연결 대기 중 |
+| DB Quota 모니터링 | 계획 수립 완료 (14단계), 구현 대기 |
+
+---
+
+## 13단계: IoT — Tuya Cloud 연동 상세 계획
+
+### Tuya Cloud 계정 설정 절차
+
+1. [Tuya IoT Cloud](https://iot.tuya.com) 개발자 계정 생성
+2. **Smart Home** 프로젝트 유형 선택 → 프로젝트 생성
+3. **[Devices] → [Link Tuya App Account]** 탭 진입
+   - 스마트폰에 Tuya Smart 또는 Smart Life 앱 설치
+   - 화면의 QR 코드를 앱으로 스캔 → 앱 계정 연동
+   - 앱에 등록된 기기들이 클라우드 목록에 자동 표시
+4. **API Explorer**에서 Polling 테스트 시작
+
+### 인프라 선택 근거
+
+| 항목 | 선택 | 이유 |
+|------|------|------|
+| 데이터센터 | **China East (China)** | 국내에서 물리적으로 가장 가까운 서버, 지연 최소화 |
+| 프로토콜 | HTTPS REST (Tuya OpenAPI v1.0) | Tuya 공식 표준 |
+| 연결 방식 | Polling (Adaptive) | ADR-007 참조 — WebSocket 대비 설정 단순 |
+
+### 확보된 크레덴셜
+
+| 항목 | 상태 | 환경변수명 |
+|------|------|----------|
+| Client (Access) ID | ✅ 확보 | `TUYA_CLIENT_ID` |
+| Client Secret | ✅ 확보 | `TUYA_CLIENT_SECRET` |
+| Project ID | ✅ 확보 | (설정 참조용) |
+| Device ID | ⏳ 장치 물리 연결 후 확보 | `TUYA_DEVICE_ID_*` |
+
+> 크레덴셜은 **절대 코드에 하드코딩하지 않습니다.** 모두 Fly.io Secrets로 관리합니다.
+
+### Tuya → ESG 연동 데이터 흐름
+
+```
+[Tuya Cloud API]
+    │  GET /v1.0/iot-03/devices/{device_id}/status
+    │  응답 예: [{"code": "switch_1", "value": true}]  ← 플러그 ON/OFF
+    ▼
+[ESG Backend: IoT Polling Worker (services/tuya_client.py)]
+    │  switch_1 값 변화 감지
+    │  true  → is_running=true
+    │  false → is_running=false
+    ▼
+POST /iot/machines/{machine_id}/status  (내부 호출)
+    Header: X-Device-Key
+    Body: {"is_running": true | false}
+    │
+    ▼
+[기존 IoT 파이프라인 (api/iot.py)]
+    ├── in_use / available 상태 업데이트
+    ├── 대기열 알림 트리거 (_notify_queue_and_broadcast)
+    └── 전체 WebSocket broadcast
+```
+
+### Tuya API 인증 방식 (Sign Algorithm)
+
+Tuya OpenAPI는 매 요청마다 HMAC-SHA256 서명이 필요합니다.
+
+```python
+# services/tuya_client.py
+import hashlib, hmac, time
+
+def _sign(client_id: str, secret: str, access_token: str, t: str) -> str:
+    string_to_sign = client_id + access_token + t
+    return hmac.new(
+        secret.encode(),
+        string_to_sign.encode(),
+        hashlib.sha256
+    ).hexdigest().upper()
+
+async def get_device_status(device_id: str) -> bool:
+    t = str(int(time.time() * 1000))
+    access_token = await _get_access_token()
+    sign = _sign(CLIENT_ID, CLIENT_SECRET, access_token, t)
+    # GET /v1.0/iot-03/devices/{device_id}/status
+    # 응답에서 switch_1 코드 추출
+```
+
+### Tuya 무료 API Quota
+
+| 항목 | 무료 한도 | 예상 사용량 (Adaptive Polling) |
+|------|---------|-------------------------------|
+| API 호출 | 26,000회/월 | 약 17,460회/월 (67%) — ADR-007 |
+| 기기 수 | 제한 없음 | 기숙사 세탁기 수 (~30대) |
+
+> Quota 초과 시 API 호출 실패 → 세탁기 상태 갱신 불가.
+> Adaptive Polling으로 야간/비사용 시간대 호출 수 최소화합니다.
+
+### 구현 태스크
+
+| 태스크 | 내용 | 선행 조건 |
+|--------|------|----------|
+| IoT-01 | Tuya WiFi 플러그 실물 연결 + Device ID 확보 | 장치 구매 |
+| IoT-02 | `tuya_client.py` 구현 (서명 + access_token + polling) | IoT-01 |
+| IoT-03 | Adaptive polling 로직 구현 (ADR-007) | IoT-02 |
+| IoT-04 | Admin 패널에 polling 통계 표시 | IoT-03 |
+| IoT-05 | Phase 2: 자동 interval 조절 | IoT-04 |
+
+---
+
+## 14단계: DB Quota 관리 및 알림
+
+### 배경 및 제약
+
+Supabase 무료 플랜 한도:
+
+| 항목 | 무료 한도 | 위험도 |
+|------|---------|--------|
+| **DB 크기** | **500 MB** | ⚠️ IoT 연동 후 주요 위험 |
+| 월간 활성 사용자 | 50,000명 | 낮음 (기숙사 한정) |
+| 대역폭 | 5 GB / 월 | 낮음 |
+| 파일 스토리지 | 1 GB | 해당 없음 |
+
+### 데이터 증가 추정
+
+| 테이블 | 예상 증가 | 비고 |
+|--------|---------|------|
+| `machine_status_logs` | IoT 연동 후 최대 ~14,400건/일 (6초 간격 × 30대) | **주요 위험** |
+| `queue_entries` | 대기 등록마다 1행, 사용 후 만료 | 낮음 |
+| `users` | 기숙사 인원 (수백 명) | 무시 가능 |
+| `machines` | 고정 (~30행) | 없음 |
+
+> `machine_status_logs` 미제한 시 1개월 내 500MB 초과 가능.
+
+### 데이터 보존 정책 (Retention Policy)
+
+| 테이블 | 보존 기간 | 삭제 대상 |
+|--------|---------|----------|
+| `machine_status_logs` | **30일** | `changed_at < NOW() - 30 days` |
+| `queue_entries` | **7일** (만료/취소 건) | `status IN ('expired','cancelled') AND created_at < NOW() - 7 days` |
+
+```python
+# services/maintenance_service.py
+from datetime import datetime, timedelta
+
+async def cleanup_old_data(db):
+    cutoff_logs = datetime.utcnow() - timedelta(days=30)
+    deleted_logs = db.query(MachineStatusLog).filter(
+        MachineStatusLog.changed_at < cutoff_logs
+    ).delete(synchronize_session=False)
+
+    cutoff_queue = datetime.utcnow() - timedelta(days=7)
+    deleted_queue = db.query(QueueEntry).filter(
+        QueueEntry.status.in_(["expired", "cancelled"]),
+        QueueEntry.created_at < cutoff_queue
+    ).delete(synchronize_session=False)
+
+    db.commit()
+    return {"deleted_logs": deleted_logs, "deleted_queue": deleted_queue}
+```
+
+실행 주기: FastAPI startup + **24시간마다 반복** (APScheduler 또는 WS 루프 활용)
+
+### DB 사용량 조회
+
+```sql
+-- Supabase PostgreSQL에서 DB 크기 조회
+SELECT pg_size_pretty(pg_database_size(current_database())) AS db_size;
+
+-- 테이블별 크기
+SELECT
+  relname AS table_name,
+  pg_size_pretty(pg_total_relation_size(relid)) AS size
+FROM pg_catalog.pg_statio_user_tables
+ORDER BY pg_total_relation_size(relid) DESC;
+```
+
+### Quota 알림 시스템
+
+#### 임계값 및 액션
+
+| 임계값 | 액션 |
+|--------|------|
+| > 80% (400 MB) | 경고 이메일 발송 |
+| > 90% (450 MB) | 긴급 이메일 발송 + 자동 정리 즉시 실행 |
+| < 80% | 정상 (24시간 간격 재확인) |
+
+#### 알림 전송 방식
+
+| 방식 | 채택 | 이유 |
+|------|------|------|
+| **Gmail SMTP (기존 이메일 인프라)** | ✅ 채택 | `core/email.py` 재사용, 추가 설정 없음 |
+| 관리자 패널 게이지 (웹앱) | ✅ 채택 | PWA 앱 형태에 자연스럽게 통합 |
+| WebSocket 인앱 알림 | ✅ 채택 (관리자 채널) | 앱 열려있을 때 실시간 경고 |
+| PWA Push Notification | 미채택 | 구현 복잡도 과도, 관리자 전용에 불필요 |
+
+```python
+# services/quota_monitor_service.py
+from core.email import send_email
+
+SUPABASE_FREE_LIMIT_MB = 500
+
+async def check_and_alert(db):
+    used_mb = await get_db_size_mb(db)  # pg_database_size() 조회
+    percent = (used_mb / SUPABASE_FREE_LIMIT_MB) * 100
+
+    if percent > 90:
+        await send_quota_alert(percent, used_mb, level="CRITICAL")
+        await cleanup_old_data(db)  # 즉시 정리
+    elif percent > 80:
+        await send_quota_alert(percent, used_mb, level="WARNING")
+
+async def send_quota_alert(percent: float, used_mb: float, level: str):
+    subject = f"[ESG] DB Quota {level}: {percent:.0f}% 사용 중"
+    body = (
+        f"Supabase DB 사용량이 {percent:.0f}%에 도달했습니다.\n"
+        f"현재: {used_mb:.0f} MB / {SUPABASE_FREE_LIMIT_MB} MB\n"
+        f"즉시 관리자 패널을 확인하세요."
+    )
+    await send_email(to=ADMIN_EMAIL, subject=subject, body=body)
+```
+
+### 웹앱 관리자 패널 통합 (PWA 앱 형태)
+
+이 서비스의 목표는 **웹앱(PWA)** 형태로 제공하는 것입니다.
+DB quota 현황을 기존 AdminPage에 통합하여 앱 안에서 모든 운영 현황을 확인할 수 있도록 합니다.
+
+```
+AdminPage (PWA)
+├── 세탁기 상태 관리 (기존)
+├── Polling 통계 (IoT-03)
+└── 시스템 현황 [신규 — QUOTA-04]
+    ├── DB 사용량 게이지  [used MB / 500 MB]
+    ├── 이번 달 status_logs 건수
+    ├── 마지막 자동 정리 실행 시각
+    └── 수동 정리 실행 버튼
+```
+
+**신규 API 엔드포인트:**
+
+```
+GET /admin/system/stats
+Response: {
+  "db_size_mb": 123.4,
+  "db_size_percent": 24.7,
+  "log_count_30d": 432000,
+  "queue_expired_count": 1240,
+  "last_cleanup_at": "2026-05-26T00:00:00Z",
+  "next_cleanup_at": "2026-05-27T00:00:00Z"
+}
+```
+
+**WebSocket quota_warning 이벤트 (관리자 채널):**
+
+```
+서버 → 관리자 클라이언트:
+{ type: 'QUOTA_WARNING', payload: { percent: 82.3, used_mb: 411.5 } }
+```
+
+### 구현 태스크
+
+| 태스크 ID | 내용 | 우선순위 |
+|-----------|------|----------|
+| QUOTA-01 | `maintenance_service.py` — 30일/7일 자동 데이터 정리 | 높음 |
+| QUOTA-02 | `GET /admin/system/stats` — DB 사용량 API | 높음 |
+| QUOTA-03 | Background Task — 24시간마다 quota 체크 + Gmail 이메일 알림 | 높음 |
+| QUOTA-04 | `AdminPage` — DB 사용량 게이지 + 시스템 현황 UI | 중간 |
+| QUOTA-05 | WebSocket `quota_warning` 이벤트 (관리자 채널 확장) | 낮음 |

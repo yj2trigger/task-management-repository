@@ -1,6 +1,7 @@
 # AI 인계 문서 (AI Handover Guide)
 
 > 작성일: 2026-05-23
+> 최종 갱신: 2026-05-29
 > 목적: 이 문서를 읽은 AI가 현재 진행 중인 작업을 즉시 이어받을 수 있도록 합니다.
 
 ---
@@ -12,12 +13,21 @@
 
 ---
 
+## 운영 원칙
+
+- **모든 문서는 `docs/`에서만 관리** — 하위 레포의 docs는 업데이트하지 않음
+- **코드 변경은 하위 레포에서, 문서/태스크는 여기서**
+- **단계가 끝날 때마다 `CURRENT_STATE.md`와 `tasks/`를 업데이트**
+
+---
+
 ## 현재 관리 중인 프로젝트
 
 | 프로젝트 | 레포 | 현재 상태 |
-|---------|------|---------|
-| ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK-01 진행 중 (medicine.py 리팩터링) |
-| ESG | [ESG](https://github.com/yj2trigger/ESG) | 구현 1단계 완료, 2단계(성별 선택) 승인 대기 |
+|---------|------|----------|
+| ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK 전체 구현 완료, PR #16 gemini-review 실패로 blocked |
+| ESG | [ESG](https://github.com/yj2trigger/ESG) | 핵심 기능 완료 + 운영 중 |
+| MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | 인증 도메인 구현 완료, 코드 개선 완료 |
 
 ---
 
@@ -28,8 +38,9 @@
 | 1 | `COLLABORATION_RULES.md` | AI가 따라야 할 협업 규칙 |
 | 2 | `docs/ic-pbl/CURRENT_STATE.md` | ic-pbl 현재 진행 상태 |
 | 3 | `docs/ESG/CURRENT_STATE.md` | ESG 현재 진행 상태 |
-| 4 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
-| 5 | `tasks/backlog.md` | 대기 중인 태스크 |
+| 4 | `docs/MAP/CURRENT_STATE.md` | MAP 현재 진행 상태 |
+| 5 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
+| 6 | `tasks/backlog.md` | 대기 중인 태스크 |
 
 ---
 
@@ -44,54 +55,85 @@
 
 ---
 
-## ESG 프로젝트 인계 정보
+## ic-pbl (EDK) 프로젝트 인계 정보
 
-### 다음에 할 작업: 구현 2단계 — 성별 선택 (프론트엔드 only)
+### 현재 상태: PR #16 — gemini-review check 실패로 blocked
 
-**작업 내용:**
-- `project/frontend/src/types/user.ts` — Gender 타입 정의
-- `project/frontend/src/store/authStore.ts` — Zustand + localStorage
-- `project/frontend/src/pages/GenderSelectPage.tsx` — 남/여 선택 UI
-- `project/frontend/src/App.tsx` 수정 — 라우팅 연결
-- `project/frontend/src/__tests__/authStore.test.ts` — store 단위 테스트
+`pmg-ic-pbl`의 `develop` 브랜치에 EDK 전체 구현이 올라가 있으며, `main` 대상 PR #16이 열려 있습니다.
 
-**설계 결정 사항 (변경 불가):**
-- 인증 없음 — gender를 localStorage에 저장
-- 백엔드 API 요청 시 쿼리 파라미터(`?gender=male`)로 전달
-- 프로토타입이므로 로그인/회원가입 구현하지 않음
+**GitHub 상태:**
+- PR: https://github.com/yj2trigger/pmg-ic-pbl/pull/16
+- Head: `develop` commit `6fc283c`
+- Base: `main`
+- 상태: `mergeable_state: blocked` — `.github/workflows/gemini-review.yml` check 실패
+- `develop` behind 0
+- 로컬 검증: `project/`에서 `python -m pytest` → `198 passed, 6 subtests passed` (2026-05-27)
 
-**파일 위치:** `ESG 레포 > project/frontend/`
+**block 원인:**
+`gemini-review.yml` 워크플로가 Gemini API를 호출해 PR 코멘트를 게시하는 구조인데, check run `review`가 `failure`로 완료됨.
+가능한 원인: `GEMINI_API_KEY` secret 만료/미설정, 또는 diff 크기 초과 (PR #16: +2107/-3838, 56 files).
 
-**전체 구현 순서:**
+**포함된 작업:**
+- `Medicine`, `Symptom`, `SymptomGroup` 도메인 전환
+- `DrugController` 및 `DataManager` 의약품/증상 JSON 전환
+- CLI 증상 선택 → 의약품 탐색 → 결제 흐름
+- PyQt6 GUI 증상 선택, 의약품 목록/상세, 응급 안내, 관리자 화면
+- EDK 기준 테스트 전면 재작성
+- `project/pyproject.toml`, `project/README.md` 패키징/문서화
+- 관리자 비밀번호 scrypt 해시 및 평문 자동 마이그레이션
+- 가격 정책 1000원 단위 정규화
+- `stats.py`와 `test_stats.py` Medicine 기준 수정
 
-| 순서 | 기능 | 백엔드 | 프론트엔드 |
-|------|------|--------|-----------|
-| 1 | 프로젝트 골격 + Docker | ✅ | ✅ |
-| 2 | 성별 선택 | — | ⏳ 다음 작업 |
-| 3 | 세탁기 상태 조회 (Mode A/B/C) | ⏳ | ⏳ |
-| 4 | Mode B — 소프트 예약 | ⏳ | ⏳ |
-| 5 | Mode C — 대기열 | ⏳ | ⏳ |
-| 6 | WebSocket 실시간 연결 | ⏳ | ⏳ |
+**다음 작업:**
+1. `GEMINI_API_KEY` secret 유효 여부 확인 (GitHub repo settings → Secrets)
+2. 유효하다면 diff 크기 문제 — 워크플로에 diff 크기 제한 로직 추가 후 re-run
+3. check 통과 후 PR #16 → main 머지
+4. 머지 후 `docs/ic-pbl/CURRENT_STATE.md`와 `tasks/done.md`에 PR #16 머지 완료 반영
 
-**설계 문서 위치:** `ESG 레포 > project/design_progress.md` (1~9단계 전체 설계 포함)
+**주의:**
+- `pmg-ic-pbl/docs/`는 이 관리 레포로 이전되어 삭제 유지가 맞습니다.
+- 프로젝트 문서 SSOT는 `task-management-repository/docs/ic-pbl/`입니다.
 
 ---
 
-## ic-pbl (EDK) 프로젝트 인계 정보
+## ESG 프로젝트 인계 정보
 
-### 다음에 할 작업: EDK-01 — medicine.py 리팩터링
+### 현재 상태: 핵심 기능 완료 + 운영 중
 
-**작업 내용:**
-- `pmg-ic-pbl/project/src/app/product.py`의 `Coffee`, `Gummy` 클래스를
-  `medicine.py`의 `Medicine` 클래스로 교체
-- `product_type` → `symptom_category` 개념으로 전환
-- `symptom_category`: `두통`, `감기`, `소화불량`, `피로`, `외상` 중 하나
+상세 상태는 `docs/ESG/CURRENT_STATE.md`를 기준으로 확인합니다.
 
-**설계 결정 사항:**
-- 결제 시스템(payment.py, cart.py) 유지 — 실제 판매 서비스이므로 필수
-- 전문의약품 제외, 일반의약품 + 영양제만 취급
+**향후 주요 작업:**
+- IoT 실물 연동: Tuya WiFi 플러그 연결 + Device ID 확보
+- DB Quota 관리: 자동 정리, 관리자 시스템 통계, 이메일 알림
+- 운영 개선: 다중 서버 WebSocket 브로드캐스트 보완
 
-**설계 문서 위치:** `docs/ic-pbl/` 전체
+---
+
+## MAP 프로젝트 인계 정보
+
+### 현재 상태: 인증 도메인 구현 완료
+
+레포: `we-meet-trip/map-service-user` (Spring Boot 3.4.2, JDK 21 Virtual Threads)
+
+**완료된 작업 (2026-05-28):**
+- Swagger → Spring REST Docs 마이그레이션
+- AuthControllerTest 전원 403 수정 (`addFilters = false`)
+- RateLimitService Lua 스크립트 (atomic rate limiting)
+- RefreshToken device 필드 제거 + V2 Flyway 마이그레이션
+- CORS 외부화 (CorsProperties, `CORS_ALLOWED_ORIGINS` 환경변수)
+- JwtService 생성자 초기화, KakaoOAuthService RestClient 주입 전환
+
+**미완료 / 다음 작업:**
+- CORS 운영 도메인 확정 후 `CORS_ALLOWED_ORIGINS` 환경변수 설정
+- OAuth access_token DB 암호화 (AES-256-GCM, 현재 평문 저장)
+- Apple OAuth2 구현
+- 프로덕션 배포 (CI/CD 파이프라인)
+
+**주의사항:**
+- **git push 절대 금지** — 사용자 명시적 승인 후에만 push (`절대 push는 하지 마세요`)
+- 로컬 작업 디렉토리: `c:\onedrive\_대학교\MAP\git\map-service-user`
+- git user: `yj2trigger`, org: `we-meet-trip`
+- 상세 상태: `docs/MAP/CURRENT_STATE.md`
 
 ---
 
@@ -100,11 +142,12 @@
 이 레포와 하위 프로젝트 레포는 GitHub MCP로 직접 파일을 읽고 쓸 수 있습니다.
 
 ```
-owner: yj2trigger
+owner: yj2trigger / we-meet-trip
 repos:
   - task-management-repository  (이 레포)
   - pmg-ic-pbl                  (ic-pbl 코드)
   - ESG                         (ESG 코드)
+  - map-service-user            (MAP 코드, org: we-meet-trip)
 ```
 
 **작업 흐름:**
@@ -118,28 +161,4 @@ repos:
 
 ## 문서 구조
 
-```
-task-management-repository/
-├── COLLABORATION_RULES.md   ← AI 협업 규칙 (필독)
-├── AI_HANDOVER.md           ← 이 문서
-├── README.md                ← 레포 개요
-├── .gitmodules
-│
-├── docs/
-│   ├── ic-pbl/              ← ic-pbl 설계 문서 전체
-│   │   ├── CURRENT_STATE.md
-│   │   ├── requirements.md
-│   │   ├── scope.md
-│   │   ├── architecture.md
-│   │   ├── system_flow.md
-│   │   ├── terminology.md
-│   │   ├── test_strategy.md
-│   │   └── gui_architecture.md
-│   └── ESG/
-│       └── CURRENT_STATE.md
-│
-└── tasks/
-    ├── backlog.md
-    ├── in-progress.md
-    └── done.md
-```
+→ [README.md](./README.md) 참고

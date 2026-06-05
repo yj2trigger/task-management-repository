@@ -1,27 +1,17 @@
 # CURRENT_STATE — ESG (기숙사 세탁기 예약 서비스)
 
-> Last Update: 2026-05-28
+> Last Update: 2026-05-30
 > 원본 레포: [yj2trigger/ESG](https://github.com/yj2trigger/ESG)
-> 설계 문서: [full_plan.md](./full_plan.md)
-> 아키텍처: [architecture.md](../../portfolio/ESG/architecture.md)
+> 전체 설계 문서: [full_plan.md](./full_plan.md)
+> 상세 기술 명세 (API · 파일 구조 · 배포): [portfolio/ESG/architecture.md](../../portfolio/ESG/architecture.md)
 
 ---
 
-## 🟢 현재 단계
+## 현재 단계
 
-**핵심 기능 완료 + SmartThings IoT 전력 수집 운영 중 (Fly.io + Supabase + Vercel)**
+**핵심 기능 전체 완료 + 운영 중 (Fly.io NRT + Supabase + Vercel)**
 
----
-
-## 프로젝트 개요
-
-| 항목 | 내용 |
-|------|------|
-| 서비스명 | 기숙사 세탁기 예약 서비스 |
-| 한 줄 정의 | 기숙사생들이 세탁기 사용 가능 여부를 원격으로 보고 합리적으로 판단할 수 있도록 하는 앱 |
-| 기술 스택 | React + TypeScript / FastAPI / PostgreSQL / Docker / Fly.io + Supabase + Vercel |
-| 목적 | 과제 프로토타입 + 실제 배포 + 포트폴리오 |
-| 인증 방식 | JWT + @hanyang.ac.kr 이메일 도메인 제한 + 6자리 OTP |
+**IoT 릴레이:** GitHub Actions `workflow_dispatch` 기반, cron-job.org 외부 트리거 방식으로 전환 예정
 
 ---
 
@@ -45,150 +35,86 @@
 | 4. 세탁기 상태 조회 (Mode A/B/C) | ✅ | ✅ |
 | 5. Mode B 소프트 예약 + Mode C 대기열 | ✅ | ✅ |
 | 6. WebSocket 실시간 연결 | ✅ | ✅ |
-| 7. Docker Compose 로컬 실행 | ✅ | ✅ |
+| 7. Docker Compose 로컈 실행 | ✅ | ✅ |
 | 8. CI/CD (GitHub Actions → Fly.io + Vercel) | ✅ | ✅ |
 | 9. 운영 고려사항 (rate limit, soft_reserve 중복 방지) | ✅ | — |
 | 10. 이메일 인증 (@hanyang.ac.kr + 6자리 OTP) | ✅ | ✅ |
 | 11. 대기 순번 실시간 표시 (WS queue_position_updated) | ✅ | ✅ |
 | 12. 모바일 PWA (standalone + Fullscreen API) | — | ✅ |
-| 13. 관리자 페이지 (세탁기 상태 변경) | ✅ | ✅ |
+| 13. 관리자 페이지 (세탁기 상태 + 전력 그래프 롤링 24h) | ✅ | ✅ |
 | 14. 비밀번호 / 아이디 변경 (설정 페이지) | ✅ | ✅ |
-| 15. IoT 신호 수신 엔드포인트 | ✅ | — |
-| 16. machine_status_logs 누적 | ✅ | — |
-| 17. SmartThings 전력 polling (ADR-007) | ✅ | — |
-| 18. machine_power_logs 누적 + 7일 자동 정리 | ✅ | — |
-| 19. 관리자 전력 그래프 (24h, 60s 자동갱신) | ✅ | ✅ |
-| 20. 전력 임계값 설정 (system_settings) | ✅ | — |
+| 15. IoT 엔드포인트 (power_w + poll_tick 포함) | ✅ | — |
+| 16. GitHub Actions IoT 릴레이 (12초 주기) | ✅ | — |
+| 17. DB Quota 관리 (전력 로그 30일 보존) | ✅ | — |
+| 18. 소프트 예약 → 이용 중 자동 전환 + machine_started 알림 | ✅ | ✅ |
+| 19. IoT 감지 임계값 히스테리시스 (10W 시작 / 5W 정지) | ✅ | — |
+| 20. PollingInfoBar (12초 주기 단일 표시) | — | ✅ |
+| 21. 관리자 페이지 WS 실시간 + 10초 폴링 자동 갱신 | ✅ | ✅ |
+| 22. broken 상태 IoT 자동 전환 차단 | ✅ | — |
+| **23. cron-job.org 외부 트리거** | 특 미완료 | — |
 
 ---
 
-## 배포 구성
+## IoT 연동 아키텍처
 
-| 역할 | 플랫폼 | 비고 |
-|------|--------|------|
-| Backend (FastAPI + SmartThings polling) | Fly.io | `auto_stop_machines = false`, WebSocket 상시 가동 |
-| Database (PostgreSQL) | Supabase | 무료 500MB |
-| Frontend (React) | Vercel | CDN, SPA 라우팅 rewrites |
+### 현재 운영 방식
 
----
+```
+[GitHub Actions, workflow_dispatch 기반]
+  └─ cron-job.org가 5분마다 GitHub API 호출 → 워크플로우 트리거 (예정)
+  └─ 워크플로우 실행: SmartThings 폴링 (12초 × 25회)
+       ├─ power_w 로그 저장
+       ├─ 상태 전환 (available ↔ in_use)
+       └─ poll_tick WS 브로드쾐스트
+```
 
-## API 엔드포인트 전체 목록
-
-| Method | Path | 설명 | 인증 |
-|--------|------|------|------|
-| POST | `/auth/register` | 회원가입 (@hanyang.ac.kr 필수) | 불필요 |
-| POST | `/auth/verify-email` | OTP 인증 → JWT 반환 | 불필요 |
-| POST | `/auth/login` | 로그인 → JWT 반환 | 불필요 |
-| PATCH | `/auth/password` | 비밀번호 변경 (현재 비번 검증) | 필요 |
-| PATCH | `/auth/username` | 아이디 변경 → 새 JWT 반환 | 필요 |
-| GET | `/machines` | 현재 모드 + 층별 상태 | 필요 |
-| GET | `/machines/my-reservation` | 현재 사용자 활성 소프트 예약 | 필요 |
-| POST | `/machines/request` | Mode B: 세탁기 1대 배정 | 필요 |
-| POST | `/queue/join` | Mode C: 대기열 등록 | 필요 |
-| DELETE | `/queue/leave` | 대기열 취소 | 필요 |
-| POST | `/queue/accept` | Mode C: 5분 수락 대기 확정 | 필요 |
-| GET | `/queue/status` | 대기 상태 조회 (새로고침 복원용) | 필요 |
-| GET | `/admin/machines` | 전체 세탁기 목록 | admin |
-| PATCH | `/admin/machines/{id}` | 세탁기 상태 변경 + 큐 알림 트리거 + status_log 기록 | admin |
-| GET | `/admin/machines/{id}/power-history` | 전력 이력 조회 (최대 168h) | admin |
-| GET | `/admin/settings` | 전력 임계값 조회 | admin |
-| PATCH | `/admin/settings` | 전력 임계값 수정 | admin |
-| POST | `/iot/machines/{id}/status` | IoT 신호 수신 (`is_running` bool) | Device Key |
-| WS | `/ws` | 실시간 연결 | JWT 쿼리 파라미터 |
-
----
-
-## 백엔드 파일 구조
-
-| 파일 | 내용 |
+| 항목 | 내용 |
 |------|------|
-| `app/models/user.py` | User ORM |
-| `app/models/machine.py` | Machine + MachineStatusLog + MachinePowerLog ORM |
-| `app/models/queue_entry.py` | QueueEntry ORM |
-| `app/models/email_verification.py` | EmailVerification ORM |
-| `app/models/system_settings.py` | SystemSettings ORM (key/value_float) |
-| `app/core/security.py` | bcrypt 해싱, JWT 생성/검증 |
-| `app/core/dependencies.py` | get_current_user, get_admin_user |
-| `app/core/ws_manager.py` | ConnectionManager 싱글톤, gender 채널 분리 |
-| `app/core/email.py` | Gmail SMTP — send_verification_email() |
-| `app/repositories/machine_repo.py` | count_available, soft_reserve, release_expired, get_by_id, set_status, seed |
-| `app/repositories/machine_status_log_repo.py` | create (상태 변경 이력 기록) |
-| `app/repositories/machine_power_log_repo.py` | create, get_history, delete_old (7일) |
-| `app/repositories/queue_repo.py` | join, leave, get_position, get_next_waiter, reset_expired_notifications |
-| `app/repositories/system_settings_repo.py` | get_float, set_float |
-| `app/repositories/user_repo.py` | get_by_username, create |
-| `app/services/auth_service.py` | 토큰 생성/검증, register, login |
-| `app/services/machine_service.py` | Mode 계산, get_dashboard |
-| `app/services/queue_service.py` | 대기열 비즈니스 로직 |
-| `app/services/smartthings_client.py` | SmartThings API — get_power_w(device_id) |
-| `app/services/smartthings_poller.py` | poll_loop() — 백그라운드 태스크, ADR-007 적응형 주기 |
-| `app/api/ws.py` | JWT 검증 → 초기 상태 → 30s keepalive, _notify_queue_and_broadcast |
-| `app/api/auth.py` | register, verify-email, login, PATCH password/username |
-| `app/api/machines.py` | GET /machines, GET /machines/my-reservation, POST /machines/request |
-| `app/api/queue.py` | POST /queue/join, DELETE /queue/leave, POST /queue/accept, GET /queue/status |
-| `app/api/admin.py` | GET/PATCH /admin/machines, GET power-history, GET/PATCH /admin/settings |
-| `app/api/iot.py` | POST /iot/machines/{id}/status (X-Device-Key 인증) |
-| `app/main.py` | lifespan (seed + smartthings_poller 시작), logging 레벨 설정 |
+| 연동 기기 | 세탁기 1대 (`SMARTTHINGS_DEVICE_01`) |
+| 릴레이 주기 | 12초 (5분 워크플로우 내 25회) |
+| SmartThings rate limit | 250 req/분 — 50대 확장 시도 한도 유지 |
+| 시작 임계값 | 10W |
+| 정지 임계값 | 5W |
+| Fly.io 리전 | NRT (Tokyo) — 한국 사용자 지연시간 최적화 |
+
+### 트리거 전환 이유
+
+| 방식 | 트리거 주체 | 신뢰도 | 비고 |
+|---|---|---|---|
+| GitHub `schedule` | GitHub 내부 스케줄러 | 낙음 | 수시간 지연·누락 확인됨 |
+| cron-job.org + `workflow_dispatch` | 외부 크론 서비스 | 높음 | 분 단위 정확, 무료 |
+
+**SSOT 원칙:** threshold는 `fly.toml [env]` 원본. config.py는 로컈 dev 기본값.
+
+### cron-job.org 설정 계획
+
+1. GitHub PAT 발급 (스코프: `workflow`)
+2. cron-job.org 가입 → 크론 생성
+   - URL: `https://api.github.com/repos/yj2trigger/ESG/actions/workflows/relay.yml/dispatches`
+   - Method: POST
+   - 주기: 5분
+   - Headers: `Authorization: Bearer <PAT>`, `Content-Type: application/json`
+   - Body: `{"ref": "main"}`
+3. relay.yml에서 `schedule` 트리거 제거 (`workflow_dispatch`만 유지)
 
 ---
 
-## 프론트엔드 파일
-
-| 파일 | 내용 |
-|------|------|
-| `src/api/auth.ts` | register, login, verifyEmail, changePassword, changeUsername |
-| `src/api/machines.ts` | getMachines, requestMachine, getMyReservation |
-| `src/api/queue.ts` | joinQueue, leaveQueue, acceptOffer, getQueueStatus |
-| `src/api/admin.ts` | adminGetMachines, adminSetStatus, adminGetPowerHistory |
-| `src/hooks/useWebSocket.ts` | 3s 자동 재연결, WsMessage 타입 분기 |
-| `src/pages/GenderSelectPage.tsx` | 성별 선택 + 구역 안내 |
-| `src/pages/LoginPage.tsx` | 로그인/회원가입 탭 + 비밀번호 보기 토글 |
-| `src/pages/VerifyEmailPage.tsx` | 6자리 코드 입력 |
-| `src/pages/DashboardPage.tsx` | Mode A/B/C, 소프트예약 복원, 5분 수락 대기, 실시간 순번 |
-| `src/pages/SettingsPage.tsx` | 비밀번호/아이디 변경, 로그아웃 |
-| `src/pages/AdminPage.tsx` | 층별 기기 상태 토글 + PowerGraph (recharts, 24h, 60s 갱신) |
-| `src/store/authStore.ts` | Zustand (user, gender, setUser, logout) + localStorage persist |
-| `src/store/machineStore.ts` | Zustand (data, loading, error) |
-| `public/manifest.json` | PWA manifest (display: standalone) |
-
----
-
-## 환경변수
-
-| 변수 | 위치 | 설명 |
-|------|------|------|
-| `DATABASE_URL` | Fly.io Secrets | Supabase PostgreSQL (Direct URL) |
-| `SECRET_KEY` | Fly.io Secrets | JWT 서명 키 |
-| `GMAIL_USER` | Fly.io Secrets | OTP 이메일 발신 계정 |
-| `GMAIL_APP_PASSWORD` | Fly.io Secrets | Gmail 앱 비밀번호 |
-| `IOT_DEVICE_KEY` | Fly.io Secrets | IoT REST 엔드포인트 인증 키 |
-| `CORS_ORIGINS` | Fly.io Secrets | Vercel 프론트 URL |
-| `SMARTTHINGS_PAT` | GitHub Secret → Fly.io Secrets | SmartThings Personal Access Token |
-| `SMARTTHINGS_DEVICE_01` | GitHub Secret → Fly.io Secrets | SmartThings 장치 ID (machine_id=1) |
-| `VITE_API_URL` | Vercel Environment | 백엔드 API URL |
-
-> `SMARTTHINGS_DEVICE_XX` 패턴: 접미사 숫자 = machine_id (예: `SMARTTHINGS_DEVICE_02` → machine_id=2)
-> GitHub Actions CD가 `flyctl secrets set`으로 자동 전파.
-
----
-
-## 알려진 이슈 / 해결된 버그
+## 해결된 버그 (2026-05-29~30)
 
 | 이슈 | 상태 |
 |------|------|
-| 대시보드 로딩 무한 (WS 업데이트마다 깜박임) | ✅ 수정 |
-| Resend 무료 플랜 외부 도메인 발송 불가 | ✅ Gmail SMTP 전환 |
-| WsMessage TypeScript 타입 누락 | ✅ 수정 |
-| 모바일 horizontal overflow | ✅ boxSizing: border-box |
-| Mode B 배정 후 결과 즉시 사라짐 | ✅ modeBResult 부모로 lift up |
-| Mode C 대기 중 모드 전환 시 대기 소멸 | ✅ queueInfo 부모로 lift up |
-| 어드민 available 전환 시 큐 알림 미발송 | ✅ _notify_queue_and_broadcast 연결 |
-| SmartThings polling INFO 로그 안 보임 | ✅ logging.getLogger("app").setLevel(INFO) |
-| polling 루프 DB 오류 시 전체 중단 | ✅ 각 단계 독립 try/except |
-| `flyctl secrets deploy` 실패 (머신 없음) | ✅ `flyctl secrets set` 사용 |
-| polling 적응형 주기 역전 (Mode A가 가장 빠름) | ✅ 수정 (C=60s, B=120s, A=480s) |
-| 상태 버튼 너비 불일치 (사용 중 ↔ 이용 가능) | ✅ minWidth: 4.8rem 고정 |
-| React StrictMode WS 1006 disconnect | 미해결 (두 번째 연결 정상, 프로덕션 무관) |
+| soft_reserved + 전력 낙음 → available 강제 전환 버그 | ✅ |
+| DB/in-memory 상태 불일치 시 DB 교정 안 됨 | ✅ |
+| AdminPage THRESHOLD_W=100 하드코딩 | ✅ |
+| fly.toml [env] POWER_THRESHOLD_W=100 오버라이드 | ✅ (SSOT 교정) |
+| SmartThings Fly.io datacenter IP 차단 | ✅ GitHub Actions 릴레이로 우회 |
+| 관리자 그래프 자정 전환 데이터 공백 | ✅ 롤링 24h 윈돈우 |
+| IoT power_w 미저장 | ✅ 수신 시 로그 저장 추가 |
+| broken 기기 IoT 자동 전환 | ✅ 보호 추가 |
+| relay 워크플로우 timeout 6분 초과 | ✅ 8분으로 연장 + pip 쾐시 |
+| GitHub `schedule` 트리거 신뢰 불가 | 교체 예정 (cron-job.org) |
+| 테스트 settings 전역 오염 | ✅ autouse reset fixture + 키 통일 |
+| React StrictMode WS 1006 disconnect | 미해결 |
 
 ---
 
@@ -196,9 +122,10 @@
 
 | 항목 | 내용 |
 |------|------|
-| `in_use` 자동 해제 | 없음 — 어드민 수동 또는 IoT REST 엔드포인트 (`/iot`) 필요 |
-| IoT 실제 장치 연결 | SmartThings polling 구현 완료, 실제 기기 부착은 별도 작업 |
-| ConnectionManager | 단일 인스턴스 — 다중 서버 시 Redis pub/sub 필요 (현재 Fly.io 1대) |
+| **cron-job.org 연동** | 미완료 — GitHub `schedule` 대체하여 relay 실행 안정성 확보 필요 |
+| IoT 기기 확장 | 1대 연동 — `SMARTTHINGS_DEVICE_02` + GitHub Secrets 추가로 확장 |
+| in_use 자동 해제 | 없음 — IoT 전력 낙음 시에만 available 전환 |
 | PWA Push Notification | WebSocket 인앱 알림만 — 백그라운드 미지원 |
-| 통계 UI | machine_status_logs + machine_power_logs 누적 중, 시간대별 혼잡도 UI 미구현 |
-| 전력 임계값 UI | 어드민 UI 없음, API만 존재 (`PATCH /admin/settings`) |
+| DB Quota 관리 | 전력 로그 30일 자동 정리 적용 중 |
+| 통계 분석 | machine_power_logs 수집 중 — 기능 미구현 |
+| Alembic 마이그레이션 | 미적용 (`create_all()` 사용 중) |
