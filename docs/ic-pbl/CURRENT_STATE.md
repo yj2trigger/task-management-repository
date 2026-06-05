@@ -1,120 +1,91 @@
-# CURRENT_STATE — EDK (ic-pbl)
+# CURRENT_STATE — ic-pbl 아이스크림 키오스크
 
-> Last Update: 2026-05-25
-> Phase: 도메인 전환 — EDK(Erica Drug King) 리팩터링 대기 중 (미착수)
-
----
-
-## ⚠️ 프로젝트 방향 전환
-
-**기존**: Micro-Factory Kiosk (커피/영양구미 판매)
-**변경**: EDK — 증상 선택 기반 일반의약품/영양제 실제 판매 키오스크
-
-기존 PyQt6 GUI 아키텍처(QStackedWidget, screens/, voice_service)는 그대로 재활용.
-결제 시스템(payment.py, cart.py, ChangeReserve)은 유지 — 실제 판매이므로 필수.
+> Last Update: 2026-06-05
+> Phase: **완료** — 기능 구현, 버그 수정, 의존성 분리, 전체 파일 헤더 주석 완료, 149 tests passing
 
 ---
 
-## Current Active Unit
+## 도메인 현황
 
-없음 — 전체 태스크 backlog.md 대기 중.
+아이스크림 키오스크 (stick ₩3,000 / scoop ₩4,000). 커스터마이징 옵션(형태, 코팅, 토핑, 용기, 맛), 재고 기반 주문, 현금/카드 결제, 관리자 메뉴.
 
-현재 코드베이스는 원본 Micro-Factory Kiosk (Coffee/Gummy 도메인) 그대로.
+**GUI 흐름:** idle → main_menu → customize → cart → payment_method → cash/card → receipt
 
----
-
-## ✅ 재활용 확정 유닛
-
-| 파일 | 재활용 방식 |
-|------|-----------|
-| exceptions.py | 그대로 재활용 |
-| ingredient.py | 의약품/영양제 재고로 재활용 |
-| cart.py | 그대로 재활용 (실제 판매, 장바구니 필요) |
-| payment.py | 그대로 재활용 (현금/카드 결제 필요) |
-| data_manager.py | 의약품 JSON 데이터 관리로 재활용 |
-| gui/app.py | 그대로 재활용 |
-| gui/voice_service.py | 그대로 재활용 |
-| gui/screens/admin_auth.py | 그대로 재활용 |
-| gui/screens/cart.py | 그대로 재활용 |
-| gui/screens/payment_method.py | 그대로 재활용 |
-| gui/screens/cash_payment.py | 그대로 재활용 |
-| gui/screens/receipt.py | 그대로 재활용 |
+**레이어 원칙:** GUI (screens/) → KioskController → 도메인 (Cart, Payment, Ingredient, ...)
+GUI는 KioskController의 공개 메서드만 호출한다. 도메인 객체를 직접 생성·접근·조작하지 않는다.
 
 ---
 
-## 🔄 EDK 전환 작업 목록
+## 구현 완료 현황
 
 ### Core
 
-| 작업 | 파일 | 상태 |
-|------|------|------|
-| EDK-01 | product.py → medicine.py | ⬜ 대기 |
-| EDK-02 | kiosk_controller.py → drug_controller.py | ⬜ 대기 |
-| EDK-03 | data_manager.py 데이터 구조 전환 | ⬜ 대기 |
-| EDK-04 | main.py 초기화 로직 교체 | ⬜ 대기 |
-| EDK-05 | cli_view.py 증상 탐색 → 구매 → 결제 흐름 | ⬜ 대기 |
-
-### GUI (신규/수정)
-
-| 작업 | 파일 | 상태 |
-|------|------|------|
-| GUI-EDK-01 | main_window.py 네비게이션 교체 | ⬜ 대기 |
-| GUI-EDK-02 | main_menu.py → symptom_select.py | ⬜ 대기 |
-| GUI-EDK-03 | product_list.py → medicine_list.py | ⬜ 대기 |
-| GUI-EDK-04 | customize.py → medicine_detail.py | ⬜ 대기 |
-| GUI-EDK-05 | (신규) emergency.py | ⬜ 대기 |
-| GUI-EDK-06 | admin_menu.py 의약품 관리로 수정 | ⬜ 대기 |
-
----
-
-## 목표 파일 구조 (전환 후)
-
-```
-src/app/
-├── main.py
-├── drug_controller.py
-├── cli_view.py
-├── medicine.py              # 신규 (product.py 교체)
-├── ingredient.py            # 재활용
-├── cart.py                  # 재활용
-├── payment.py               # 재활용
-├── data_manager.py
-├── exceptions.py            # 재활용
-└── gui/
-    ├── app.py               # 재활용
-    ├── main_window.py       # 수정
-    ├── voice_service.py     # 재활용
-    └── screens/
-        ├── idle.py              # 재활용
-        ├── symptom_select.py    # 신규
-        ├── medicine_list.py     # 신규
-        ├── medicine_detail.py   # 신규
-        ├── cart.py              # 재활용
-        ├── payment_method.py    # 재활용
-        ├── cash_payment.py      # 재활용
-        ├── receipt.py           # 재활용
-        ├── emergency.py         # 신규
-        ├── admin_auth.py        # 재활용
-        └── admin_menu.py        # 수정
-```
-
----
-
-## 데이터 파일 구성
-
-| 파일 | 내용 |
+| 파일 | 역할 |
 |------|------|
-| `medicines.json` | 제품 목록 (이름, 효능, 복용법, 주의사항, 가격, 재고, 증상 카테고리) |
-| `symptoms.json` | 증상 카테고리 정의 |
-| `change_reserve.json` | 잔돈 보유량 (재활용) |
-| `admin_config.json` | 관리자 비밀번호 (재활용) |
+| `ice_cream.py` | `IceCreamProduct` — product_id, name, base_price, is_available, product_type |
+| `option.py` | `Option`, `OptionGroup` — 커스터마이징 옵션 |
+| `kiosk_controller.py` | 상품/옵션/장바구니/결제/관리자 전체 비즈니스 로직. GUI의 단일 진입점. |
+| `data_manager.py` | products.json / ingredients.json / options.json / admin_config.json / change_reserve.json |
+| `main.py` | GUI 진입점, 데이터 초기화 (`--gui` 플래그). `(controller, cart)` 반환. |
+| `password_utils.py` | `hash_password` / `verify_password` (scrypt) |
+| `cart.py` | `OrderItem`, `Cart` |
+| `payment.py` | `CashPayment`, `CardPayment`, `ChangeReserve` |
+| `ingredient.py` | `Ingredient` — 재고 수량 관리 |
+| `exceptions.py` | 커스텀 예외 6종 |
 
----
+> `stats.py` 미연동 상태: `Statistics` 클래스 구현은 완료되어 있으나 `KioskController._save_after_payment()`에 연결되지 않음 (dead code 주석으로 표시). 향후 통계 화면 추가 시 연동 예정.
 
-## Current Risks
+### KioskController 공개 API (전체)
 
-- 기존 테스트(test_*.py)가 구 도메인(커피/구미) 기반 — 전환 후 재작성 필요
-- cart/payment 테스트는 로직 변경 없으면 재활용 가능
+**조회:**
+`get_available_products()`, `get_option_groups(product)`, `get_unavailable_options(product, selected)`,
+`is_cart_empty()`, `get_cart_items() → list[dict]`, `get_cart_subtotal()`, `get_final_amount()`,
+`get_inserted_amount()`, `can_complete_payment()`, `get_cash_status() → dict`, `get_stock_status() → list[dict]`
+
+**장바구니:**
+`add_to_cart()`, `remove_from_cart()`, `update_cart_qty()`, `clear_cart()`
+
+**결제:**
+`start_cash_payment()`, `insert_cash()`, `process_cash_payment() → (snapshot, amount, change)`,
+`cancel_cash_payment() → int`,
+`start_card_payment()`, `process_card_payment() → (snapshot, amount)`
+
+**관리자:**
+`authenticate_admin()`, `admin_replenish()`, `admin_set_price()`, `admin_toggle_product()`,
+`admin_add_cash()`, `admin_change_password()`
+
+### GUI
+
+| 파일 | 역할 |
+|------|------|
+| `gui/app.py` | `run_gui(controller, cart)` — QApplication 진입점 |
+| `gui/main_window.py` | `KioskWindow(controller, cart)` — QStackedWidget + 네비게이션 API |
+| `gui/voice_service.py` | TTS 음성 안내 (edge-tts + pygame) |
+| `gui/screens/idle.py` | 대기 화면 |
+| `gui/screens/main_menu.py` | 상품 목록 화면 |
+| `gui/screens/customize.py` | 옵션 커스터마이징 |
+| `gui/screens/cart.py` | 장바구니 (controller.get_cart_items() → dict 리스트 사용) |
+| `gui/screens/payment_method.py` | 결제 수단 선택 |
+| `gui/screens/cash_payment.py` | 현금 결제 (controller 전담) |
+| `gui/screens/receipt.py` | 영수증 |
+| `gui/screens/admin_auth.py` | 관리자 인증 화면 |
+| `gui/screens/admin_menu.py` | 관리자 메뉴 (get_stock_status/get_cash_status 경유) |
+| `gui/widgets/stick_preview.py` | 스틱 아이스크림 미리보기 |
+| `gui/widgets/scoop_preview.py` | 스쿱 아이스크림 미리보기 |
+
+### 테스트
+
+| 파일 | 케이스 수 |
+|------|---------|
+| `test_cart.py` | 19 |
+| `test_payment.py` | 35 |
+| `test_data_manager.py` | 13 |
+| `test_exceptions.py` | 16 |
+| `test_gui_app.py` | 9 |
+| `test_gui_screens.py` | 23 |
+| `test_password_utils.py` | 7 |
+| `test_kiosk_controller.py` | 27 |
+| **합계** | **149 passed** |
 
 ---
 
@@ -122,6 +93,16 @@ src/app/
 
 ```bash
 # project/ 디렉토리 안에서
-python -m app.main        # CLI 모드
-python -m app.main --gui  # GUI 모드
+pip install -e ".[dev]"
+python -m app.main --gui   # GUI 모드
+python -m pytest tests/ -v # 테스트
+```
+
+## 빌드
+
+```powershell
+.\build_windows.ps1   # → dist\kiosk.exe  (AppData\IceCreamKiosk\data\)
+```
+```bash
+bash build_mac.sh     # → dist/kiosk.app
 ```
