@@ -24,6 +24,7 @@ task-management-repository/
 │   └── ESG/                         → yj2trigger/ESG
 │
 ├── docs/                            ← 모든 프로젝트 문서 통합 관리 (가변)
+│   ├── CLAUDE_PLUGINS.md            ← Claude Code 플러그인/스킬(user scope) SSOT
 │   ├── ic-pbl/
 │   │   ├── CURRENT_STATE.md         ← 진행 상태 · 재활용 확정 유닛 SSOT
 │   │   ├── requirements.md          ← 클래스/모듈 재활용 전략 SSOT (§ 2.4)
