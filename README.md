@@ -34,9 +34,15 @@ task-management-repository/
 │   │   ├── system_flow.md
 │   │   ├── terminology.md
 │   │   └── test_strategy.md
-│   └── ESG/
-│       ├── CURRENT_STATE.md         ← 진행 상태 · 이슈 이력 SSOT
-│       └── full_plan.md
+│   ├── ESG/
+│   │   ├── CURRENT_STATE.md         ← 진행 상태 · 이슈 이력 SSOT
+│   │   └── full_plan.md
+│   └── MAP/
+│       ├── CURRENT_STATE.md         ← map-service-user 진행 상태 SSOT
+│       ├── VPS_AR_SPEC.md           ← VPS·AR 앵커 기능 스펙 SSOT
+│       ├── API_DOCS_STANDARDS.md    ← Spring REST Docs 표준
+│       ├── DEMO_SCRIPT.md
+│       └── ENVIRONMENT_SETUP.md
 │
 ├── portfolio/                       ← 완료 프로젝트 회고 (불변)
 │   └── ESG/

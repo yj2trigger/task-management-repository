@@ -128,6 +128,7 @@
 - OAuth access_token DB 암호화 (AES-256-GCM, 현재 평문 저장)
 - Apple OAuth2 구현
 - 프로덕션 배포 (CI/CD 파이프라인)
+- VPS·AR 앵커 기능 구현 (설계 완료 → `docs/MAP/VPS_AR_SPEC.md` 참고)
 
 **주의사항:**
 - **git push 절대 금지** — 사용자 명시적 승인 후에만 push (`절대 push는 하지 마세요`)
