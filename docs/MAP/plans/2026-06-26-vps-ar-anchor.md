@@ -26,6 +26,7 @@
 | 조명 의존성 미해결 | 스캔 시 조도 체크(50lux 미만 경고). LiDAR 보조(ARKit 자동). 매칭 실패 fallback 안내. |
 | 실내 GPS 한계 | GPS 반경 500m 내 좌표계 목록 + 썸네일 선택. 없으면 전체 지도 탐색. |
 | Immersal Flutter SDK 없음 | Immersal REST API v2를 httpx(hub) + http(client)로 직접 호출. |
+| ~~손가락 획 → 텍스트 변환~~ | **폴리라인 원본 저장으로 전환** — 글씨체·주변 맥락 보존. 표면 기준점(anchor_point) + 법선(normal) + 2D 획 좌표열(strokes) 저장. 텍스트 인식 파이프라인 불필요. |
 
 ---
 
@@ -36,7 +37,8 @@
 - SQLAlchemy 2 async 패턴: `async with get_hub_db().session() as s:` (hub_db.py 기존 패턴 준수)
 - DB 스키마 변경은 Alembic 마이그레이션 직접 작성 (`--autogenerate` 금지)
 - JWT: `map-service-user` RS256 공개키를 `HUB_JWT_PUBLIC_KEY` 환경변수로 hub에 주입
-- 앵커 텍스트 최대 20자
+- 앵커 데이터는 **폴리라인** — `stroke_data JSONB` 컬럼 (텍스트 변환 없음)
+- `stroke_data` 스키마: `{anchor_point:[x,y,z], normal:[nx,ny,nz], strokes:[[[u,v]...]], stroke_width:float}`
 - 지리 쿼리: PostGIS `ST_DWithin(geography)` 사용 (geoalchemy2 이미 설치됨)
 - Flutter 기존 패키지(`http`, `geolocator`, `flutter_naver_map`) 재사용 — 불필요한 추가 금지
 
@@ -136,18 +138,16 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
           sa.Column("coordinate_system_id", sa.BigInteger,
                     sa.ForeignKey("coordinate_systems.id", ondelete="CASCADE"),
                     nullable=False),
-          sa.Column("content", sa.String(20), nullable=False),
-          sa.Column("pos_x", sa.Float, nullable=False),
-          sa.Column("pos_y", sa.Float, nullable=False),
-          sa.Column("pos_z", sa.Float, nullable=False),
-          sa.Column("rot_x", sa.Float, nullable=False, server_default="0"),
-          sa.Column("rot_y", sa.Float, nullable=False, server_default="0"),
-          sa.Column("rot_z", sa.Float, nullable=False, server_default="0"),
-          sa.Column("rot_w", sa.Float, nullable=False, server_default="1"),
+          # 폴리라인 원본 저장 (텍스트 변환 없음)
+          # 스키마: {anchor_point:[x,y,z], normal:[nx,ny,nz],
+          #          strokes:[[[u,v],...]], stroke_width:float}
+          sa.Column("stroke_data", sa.Text, nullable=False),  # JSONB 변환 (아래)
           sa.Column("created_by", sa.BigInteger, nullable=False),
           sa.Column("created_at", sa.DateTime(timezone=True),
                     server_default=sa.text("NOW()"), nullable=False),
       )
+      # JSONB로 타입 변환 (SQLAlchemy Text → JSONB)
+      op.execute("ALTER TABLE anchors ALTER COLUMN stroke_data TYPE JSONB USING stroke_data::jsonb")
       op.create_index("idx_anchors_cs", "anchors", ["coordinate_system_id"])
 
   def downgrade() -> None:
@@ -184,22 +184,27 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
   from pydantic import ValidationError
   from app.schemas.ar_schemas import AnchorCreate, CoordinateSystemCreate
 
-  def test_anchor_20자_초과_거부():
+  def test_anchor_strokes_빈_배열_거부():
       with pytest.raises(ValidationError):
-          AnchorCreate(content="가" * 21, pos_x=0, pos_y=0, pos_z=0)
+          AnchorCreate(
+              anchor_point=[0,0,0], normal=[0,0,1],
+              strokes=[], stroke_width=0.003)
 
-  def test_anchor_공백만_거부():
+  def test_anchor_stroke_width_음수_거부():
       with pytest.raises(ValidationError):
-          AnchorCreate(content="   ", pos_x=0, pos_y=0, pos_z=0)
+          AnchorCreate(
+              anchor_point=[0,0,0], normal=[0,0,1],
+              strokes=[[[0,0],[1,1]]], stroke_width=-0.001)
 
   def test_위도_범위_초과_거부():
       with pytest.raises(ValidationError):
           CoordinateSystemCreate(
               immersal_map_id="x", name="n", latitude=91.0, longitude=0.0)
 
-  def test_anchor_rot_w_기본값():
-      a = AnchorCreate(content="안녕", pos_x=1, pos_y=2, pos_z=3)
-      assert a.rot_w == 1.0
+  def test_anchor_stroke_width_기본값():
+      a = AnchorCreate(
+          anchor_point=[1,2,3], normal=[0,0,1], strokes=[[[0,0],[1,1]]])
+      assert a.stroke_width == 0.003
   ```
 
 - [ ] **Step 2: 테스트 실행 — 실패 확인**
@@ -250,35 +255,29 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
       model_config = {"from_attributes": True}
 
 
-  class AnchorCreate(BaseModel):
-      content: Annotated[str, Field(min_length=1, max_length=20)]
-      pos_x: float
-      pos_y: float
-      pos_z: float
-      rot_x: float = 0.0
-      rot_y: float = 0.0
-      rot_z: float = 0.0
-      rot_w: float = 1.0
+  # stroke_data JSONB 내부 구조 (검증용 중첩 모델)
+  class StrokeData(BaseModel):
+      anchor_point: Annotated[list[float], Field(min_length=3, max_length=3)]
+      normal: Annotated[list[float], Field(min_length=3, max_length=3)]
+      strokes: Annotated[list[list[list[float]]], Field(min_length=1)]
+      stroke_width: float = Field(default=0.003, gt=0)
 
-      @field_validator("content")
+      @field_validator("strokes")
       @classmethod
-      def content_not_blank(cls, v: str) -> str:
-          if not v.strip():
-              raise ValueError("content must not be blank")
+      def strokes_not_empty_points(cls, v: list) -> list:
+          if any(len(s) < 2 for s in v):
+              raise ValueError("each stroke must have at least 2 points")
           return v
+
+
+  class AnchorCreate(StrokeData):
+      pass  # stroke_data 필드 전체가 앵커 내용
 
 
   class AnchorResponse(BaseModel):
       id: int
       coordinate_system_id: int
-      content: str
-      pos_x: float
-      pos_y: float
-      pos_z: float
-      rot_x: float
-      rot_y: float
-      rot_z: float
-      rot_w: float
+      stroke_data: dict   # StrokeData JSON 그대로 반환
       created_by: int
       created_at: datetime
       model_config = {"from_attributes": True}
@@ -337,9 +336,13 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
               latitude=37.0, longitude=127.0,
           ), user_id=1
       )
-      anchor = await create_anchor(
-          cs["id"], AnchorCreate(content="안녕", pos_x=1, pos_y=2, pos_z=3), user_id=1
+      stroke = AnchorCreate(
+          anchor_point=[1.0, 0.5, -2.0],
+          normal=[0.0, 0.0, 1.0],
+          strokes=[[[0.0, 0.0], [0.1, 0.1], [0.2, 0.0]]],
       )
+      anchor = await create_anchor(cs["id"], stroke, user_id=1)
+      assert anchor["stroke_data"]["anchor_point"] == [1.0, 0.5, -2.0]
       assert await delete_anchor(anchor["id"], user_id=99) is False
       assert await delete_anchor(anchor["id"], user_id=1) is True
   ```
@@ -417,31 +420,24 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
 
 
   async def create_anchor(cs_id: int, data: AnchorCreate, user_id: int) -> dict:
+      import json
       sql = text("""
-          INSERT INTO anchors
-              (coordinate_system_id, content,
-               pos_x, pos_y, pos_z, rot_x, rot_y, rot_z, rot_w, created_by)
-          VALUES (:cs_id, :content,
-                  :pos_x, :pos_y, :pos_z, :rot_x, :rot_y, :rot_z, :rot_w, :user_id)
-          RETURNING id, coordinate_system_id, content,
-                    pos_x, pos_y, pos_z, rot_x, rot_y, rot_z, rot_w,
-                    created_by, created_at
+          INSERT INTO anchors (coordinate_system_id, stroke_data, created_by)
+          VALUES (:cs_id, :stroke_data::jsonb, :user_id)
+          RETURNING id, coordinate_system_id, stroke_data, created_by, created_at
       """)
       async with get_hub_db().session() as s:
           row = (await s.execute(sql, {
-              "cs_id": cs_id, "content": data.content,
-              "pos_x": data.pos_x, "pos_y": data.pos_y, "pos_z": data.pos_z,
-              "rot_x": data.rot_x, "rot_y": data.rot_y,
-              "rot_z": data.rot_z, "rot_w": data.rot_w, "user_id": user_id,
+              "cs_id": cs_id,
+              "stroke_data": json.dumps(data.model_dump()),
+              "user_id": user_id,
           })).mappings().one()
       return dict(row)
 
 
   async def list_anchors(cs_id: int) -> list[dict]:
       sql = text("""
-          SELECT id, coordinate_system_id, content,
-                 pos_x, pos_y, pos_z, rot_x, rot_y, rot_z, rot_w,
-                 created_by, created_at
+          SELECT id, coordinate_system_id, stroke_data, created_by, created_at
           FROM anchors WHERE coordinate_system_id = :cs_id ORDER BY created_at
       """)
       async with get_hub_db().session() as s:
@@ -902,10 +898,16 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
 
   void main() {
     final anchorJson = {
-      'id': 1, 'coordinate_system_id': 1, 'content': '안녕',
-      'pos_x': 1.0, 'pos_y': 2.0, 'pos_z': 3.0,
-      'rot_x': 0.0, 'rot_y': 0.0, 'rot_z': 0.0, 'rot_w': 1.0,
-      'created_by': 42, 'created_at': '2026-06-26T12:00:00Z',
+      'id': 1,
+      'coordinate_system_id': 1,
+      'stroke_data': {
+        'anchor_point': [1.0, 0.5, -2.0],
+        'normal': [0.0, 0.0, 1.0],
+        'strokes': [[[0.0, 0.0], [0.1, 0.1], [0.2, 0.0]]],
+        'stroke_width': 0.003,
+      },
+      'created_by': 42,
+      'created_at': '2026-06-26T12:00:00Z',
     };
 
     test('CoordinateSystem.fromJson', () {
@@ -915,10 +917,10 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
       expect(cs.latitude, closeTo(37.5, 0.001));
     });
 
-    test('Anchor.fromJson', () {
+    test('Anchor.fromJson - strokeData 파싱', () {
       final a = Anchor.fromJson(anchorJson);
-      expect(a.content, '안녕');
-      expect(a.rotW, 1.0);
+      expect(a.strokeData.anchorPoint, [1.0, 0.5, -2.0]);
+      expect(a.strokeData.strokes.first.length, 3);
     });
 
     test('toCreateJson에 id 미포함', () {
@@ -963,42 +965,63 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
         );
   }
 
+  class StrokeData {
+    final List<double> anchorPoint;   // [x, y, z] — Immersal 좌표계 기준점
+    final List<double> normal;        // [nx, ny, nz] — 투영 평면 법선
+    final List<List<List<double>>> strokes; // 획 배열 → 점 배열 → [u, v]
+    final double strokeWidth;         // 선 굵기 (미터)
+
+    const StrokeData({
+      required this.anchorPoint,
+      required this.normal,
+      required this.strokes,
+      this.strokeWidth = 0.003,
+    });
+
+    factory StrokeData.fromJson(Map<String, dynamic> json) => StrokeData(
+          anchorPoint: List<double>.from(
+              (json['anchor_point'] as List).map((e) => (e as num).toDouble())),
+          normal: List<double>.from(
+              (json['normal'] as List).map((e) => (e as num).toDouble())),
+          strokes: (json['strokes'] as List)
+              .map((s) => (s as List)
+                  .map((p) => (p as List)
+                      .map((v) => (v as num).toDouble())
+                      .toList())
+                  .toList())
+              .toList(),
+          strokeWidth: (json['stroke_width'] as num? ?? 0.003).toDouble(),
+        );
+
+    Map<String, dynamic> toJson() => {
+          'anchor_point': anchorPoint,
+          'normal': normal,
+          'strokes': strokes,
+          'stroke_width': strokeWidth,
+        };
+  }
+
   class Anchor {
     final int id;
     final int coordinateSystemId;
-    final String content;
-    final double posX, posY, posZ;
-    final double rotX, rotY, rotZ, rotW;
+    final StrokeData strokeData;
     final int createdBy;
     final DateTime createdAt;
 
     const Anchor({
-      required this.id, required this.coordinateSystemId, required this.content,
-      required this.posX, required this.posY, required this.posZ,
-      required this.rotX, required this.rotY, required this.rotZ, required this.rotW,
-      required this.createdBy, required this.createdAt,
+      required this.id, required this.coordinateSystemId,
+      required this.strokeData, required this.createdBy, required this.createdAt,
     });
 
     factory Anchor.fromJson(Map<String, dynamic> json) => Anchor(
           id: json['id'] as int,
           coordinateSystemId: json['coordinate_system_id'] as int,
-          content: json['content'] as String,
-          posX: (json['pos_x'] as num).toDouble(),
-          posY: (json['pos_y'] as num).toDouble(),
-          posZ: (json['pos_z'] as num).toDouble(),
-          rotX: (json['rot_x'] as num).toDouble(),
-          rotY: (json['rot_y'] as num).toDouble(),
-          rotZ: (json['rot_z'] as num).toDouble(),
-          rotW: (json['rot_w'] as num).toDouble(),
+          strokeData: StrokeData.fromJson(json['stroke_data'] as Map<String, dynamic>),
           createdBy: json['created_by'] as int,
           createdAt: DateTime.parse(json['created_at'] as String),
         );
 
-    Map<String, dynamic> toCreateJson() => {
-          'content': content,
-          'pos_x': posX, 'pos_y': posY, 'pos_z': posZ,
-          'rot_x': rotX, 'rot_y': rotY, 'rot_z': rotZ, 'rot_w': rotW,
-        };
+    Map<String, dynamic> toCreateJson() => strokeData.toJson();
   }
   ```
 
@@ -1038,10 +1061,16 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
   import 'package:map_service_client/data/repositories/ar_repository.dart';
 
   final _aJson = {
-    'id': 1, 'coordinate_system_id': 1, 'content': '안녕',
-    'pos_x': 0.0, 'pos_y': 0.0, 'pos_z': 0.0,
-    'rot_x': 0.0, 'rot_y': 0.0, 'rot_z': 0.0, 'rot_w': 1.0,
-    'created_by': 1, 'created_at': '2026-06-26T00:00:00Z',
+    'id': 1,
+    'coordinate_system_id': 1,
+    'stroke_data': {
+      'anchor_point': [0.0, 0.0, 0.0],
+      'normal': [0.0, 0.0, 1.0],
+      'strokes': [[[0.0, 0.0], [0.05, 0.05]]],
+      'stroke_width': 0.003,
+    },
+    'created_by': 1,
+    'created_at': '2026-06-26T00:00:00Z',
   };
 
   ArRepository _repo(MockClient m) => ArRepository(
