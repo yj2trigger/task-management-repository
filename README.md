@@ -70,6 +70,8 @@ task-management-repository/
 |---------|-----------|---------|
 | ic-pbl (EDK) | [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | 🔵 EDK 전체 구현 완료, PR #16 main 머지 대기 |
 | ESG | [yj2trigger/ESG](https://github.com/yj2trigger/ESG) | 🟢 핵심 기능 완료 + 운영 중 |
+| MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | 🔵 인증 도메인 완료 |
+| MAP (visitor_log) | 로컬 `c:\onedrive\_대학교\MAP\git\visitor_log` | 🟡 VPS·AR 씬 서비스 — spike 단계 |
 
 ---
 

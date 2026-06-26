@@ -28,6 +28,7 @@
 | ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK 전체 구현 완료, PR #16 gemini-review 실패로 blocked |
 | ESG | [ESG](https://github.com/yj2trigger/ESG) | 핵심 기능 완료 + 운영 중 |
 | MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | 인증 도메인 구현 완료, 코드 개선 완료 |
+| MAP (visitor_log) | 로컬 전용 `c:\onedrive\_대학교\MAP\git\visitor_log` | VPS·AR 씬 저장·블렌딩 서비스 — spike 단계 |
 
 ---
 

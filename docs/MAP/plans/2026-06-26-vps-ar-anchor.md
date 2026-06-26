@@ -140,7 +140,8 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
                     sa.ForeignKey("coordinate_systems.id", ondelete="CASCADE"),
                     nullable=False),
           # 폴리라인 원본 저장 (텍스트 변환 없음)
-          # 스키마: {anchor_point:[x,y,z], normal:[nx,ny,nz],
+          # 스키마: {ref:{pos:[x,y,z], rot:[qx,qy,qz,qw]},
+          #          rel:{pos:[dx,dy,dz], rot:[qx,qy,qz,qw]},
           #          strokes:[[[u,v],...]], stroke_width:float}
           sa.Column("stroke_data", sa.Text, nullable=False),  # JSONB 변환 (아래)
           sa.Column("created_by", sa.BigInteger, nullable=False),
