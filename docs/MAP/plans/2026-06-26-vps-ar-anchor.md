@@ -26,7 +26,7 @@
 | 조명 의존성 미해결 | 스캔 시 조도 체크(50lux 미만 경고). LiDAR 보조(ARKit 자동). 매칭 실패 fallback 안내. |
 | 실내 GPS 한계 | GPS 반경 500m 내 좌표계 목록 + 썸네일 선택. 없으면 전체 지도 탐색. |
 | Immersal Flutter SDK 없음 | Immersal REST API v2를 httpx(hub) + http(client)로 직접 호출. |
-| ~~손가락 획 → 텍스트 변환~~ | **폴리라인 원본 저장으로 전환** — 글씨체·주변 맥락 보존. 표면 기준점(anchor_point) + 법선(normal) + 2D 획 좌표열(strokes) 저장. 텍스트 인식 파이프라인 불필요. |
+| ~~손가락 획 → 텍스트 변환~~ | **인접 객체 기준 상대 6DOF 폴리라인 저장** — 위치·방향 모두 탐지된 인접 객체의 로컬 프레임 기준으로 기록. `ref`(객체 포즈 in Immersal) + `rel`(앵커의 객체 기준 상대 포즈) + `strokes`(2D 획). 렌더링 시 객체 재탐지 → 상대 트랜스폼 적용. VPS drift가 글씨 방향에 영향 없음. |
 
 ---
 
@@ -37,8 +37,9 @@
 - SQLAlchemy 2 async 패턴: `async with get_hub_db().session() as s:` (hub_db.py 기존 패턴 준수)
 - DB 스키마 변경은 Alembic 마이그레이션 직접 작성 (`--autogenerate` 금지)
 - JWT: `map-service-user` RS256 공개키를 `HUB_JWT_PUBLIC_KEY` 환경변수로 hub에 주입
-- 앵커 데이터는 **폴리라인** — `stroke_data JSONB` 컬럼 (텍스트 변환 없음)
-- `stroke_data` 스키마: `{anchor_point:[x,y,z], normal:[nx,ny,nz], strokes:[[[u,v]...]], stroke_width:float}`
+- 앵커 데이터는 **인접 객체 기준 상대 6DOF 폴리라인** — `stroke_data JSONB`
+- `stroke_data` 스키마: `{ref:{pos:[x,y,z], rot:[qx,qy,qz,qw]}, rel:{pos:[dx,dy,dz], rot:[qx,qy,qz,qw]}, strokes:[[[u,v]...]], stroke_width:float}`
+- `ref`: 탐지된 인접 객체 포즈 (Immersal 절대 공간). `rel`: 앵커의 해당 객체 로컬 프레임 기준 상대 포즈
 - 지리 쿼리: PostGIS `ST_DWithin(geography)` 사용 (geoalchemy2 이미 설치됨)
 - Flutter 기존 패키지(`http`, `geolocator`, `flutter_naver_map`) 재사용 — 불필요한 추가 금지
 
@@ -187,13 +188,15 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
   def test_anchor_strokes_빈_배열_거부():
       with pytest.raises(ValidationError):
           AnchorCreate(
-              anchor_point=[0,0,0], normal=[0,0,1],
-              strokes=[], stroke_width=0.003)
+              ref={"pos": [0,0,0], "rot": [0,0,0,1]},
+              rel={"pos": [0,0,0], "rot": [0,0,0,1]},
+              strokes=[])
 
   def test_anchor_stroke_width_음수_거부():
       with pytest.raises(ValidationError):
           AnchorCreate(
-              anchor_point=[0,0,0], normal=[0,0,1],
+              ref={"pos": [0,0,0], "rot": [0,0,0,1]},
+              rel={"pos": [0,0,0], "rot": [0,0,0,1]},
               strokes=[[[0,0],[1,1]]], stroke_width=-0.001)
 
   def test_위도_범위_초과_거부():
@@ -203,7 +206,9 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
 
   def test_anchor_stroke_width_기본값():
       a = AnchorCreate(
-          anchor_point=[1,2,3], normal=[0,0,1], strokes=[[[0,0],[1,1]]])
+          ref={"pos": [1,2,3], "rot": [0,0,0,1]},
+          rel={"pos": [0,0,0], "rot": [0,0,0,1]},
+          strokes=[[[0,0],[1,1]]])
       assert a.stroke_width == 0.003
   ```
 
@@ -255,23 +260,42 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
       model_config = {"from_attributes": True}
 
 
-  # stroke_data JSONB 내부 구조 (검증용 중첩 모델)
+  # 단위 쿼터니언 [qx, qy, qz, qw]
+  _Quat = Annotated[list[float], Field(min_length=4, max_length=4)]
+  _Vec3 = Annotated[list[float], Field(min_length=3, max_length=3)]
+
+
+  class ObjectPose(BaseModel):
+      """인접 객체 포즈 (Immersal 절대 공간 또는 로컬 상대 공간)."""
+      pos: _Vec3
+      rot: _Quat
+
+
   class StrokeData(BaseModel):
-      anchor_point: Annotated[list[float], Field(min_length=3, max_length=3)]
-      normal: Annotated[list[float], Field(min_length=3, max_length=3)]
+      """앵커 전체 데이터.
+
+      ref: 탐지된 인접 객체의 Immersal 공간 포즈 (위치+방향).
+           렌더링 시 이 포즈 근처에서 동일 객체를 재탐지하는 기준.
+      rel: 앵커의 ref 객체 로컬 프레임 기준 상대 포즈 (위치+방향).
+           객체 탐지 후 이 트랜스폼을 적용해 앵커 월드 포즈 계산.
+      strokes: 앵커 로컬 평면 기준 2D 획 배열 (미터 단위).
+      stroke_width: 렌더링 선 굵기 (미터).
+      """
+      ref: ObjectPose
+      rel: ObjectPose
       strokes: Annotated[list[list[list[float]]], Field(min_length=1)]
       stroke_width: float = Field(default=0.003, gt=0)
 
       @field_validator("strokes")
       @classmethod
-      def strokes_not_empty_points(cls, v: list) -> list:
+      def strokes_min_two_points(cls, v: list) -> list:
           if any(len(s) < 2 for s in v):
               raise ValueError("each stroke must have at least 2 points")
           return v
 
 
   class AnchorCreate(StrokeData):
-      pass  # stroke_data 필드 전체가 앵커 내용
+      pass
 
 
   class AnchorResponse(BaseModel):
@@ -336,13 +360,14 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
               latitude=37.0, longitude=127.0,
           ), user_id=1
       )
+      from app.schemas.ar_schemas import ObjectPose
       stroke = AnchorCreate(
-          anchor_point=[1.0, 0.5, -2.0],
-          normal=[0.0, 0.0, 1.0],
+          ref=ObjectPose(pos=[1.0, 0.5, -2.0], rot=[0, 0, 0, 1]),
+          rel=ObjectPose(pos=[0.0, 0.0, 0.05], rot=[0, 0, 0, 1]),
           strokes=[[[0.0, 0.0], [0.1, 0.1], [0.2, 0.0]]],
       )
       anchor = await create_anchor(cs["id"], stroke, user_id=1)
-      assert anchor["stroke_data"]["anchor_point"] == [1.0, 0.5, -2.0]
+      assert anchor["stroke_data"]["ref"]["pos"] == [1.0, 0.5, -2.0]
       assert await delete_anchor(anchor["id"], user_id=99) is False
       assert await delete_anchor(anchor["id"], user_id=1) is True
   ```
@@ -901,8 +926,8 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
       'id': 1,
       'coordinate_system_id': 1,
       'stroke_data': {
-        'anchor_point': [1.0, 0.5, -2.0],
-        'normal': [0.0, 0.0, 1.0],
+        'ref': {'pos': [1.0, 0.5, -2.0], 'rot': [0.0, 0.0, 0.0, 1.0]},
+        'rel': {'pos': [0.0, 0.0, 0.05], 'rot': [0.0, 0.0, 0.0, 1.0]},
         'strokes': [[[0.0, 0.0], [0.1, 0.1], [0.2, 0.0]]],
         'stroke_width': 0.003,
       },
@@ -917,9 +942,10 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
       expect(cs.latitude, closeTo(37.5, 0.001));
     });
 
-    test('Anchor.fromJson - strokeData 파싱', () {
+    test('Anchor.fromJson - ref.pos 파싱', () {
       final a = Anchor.fromJson(anchorJson);
-      expect(a.strokeData.anchorPoint, [1.0, 0.5, -2.0]);
+      expect(a.strokeData.ref.pos, [1.0, 0.5, -2.0]);
+      expect(a.strokeData.rel.rot, [0.0, 0.0, 0.0, 1.0]);
       expect(a.strokeData.strokes.first.length, 3);
     });
 
@@ -965,37 +991,51 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
         );
   }
 
+  // 위치 [x,y,z] + 방향 [qx,qy,qz,qw]
+  class ObjectPose {
+    final List<double> pos;
+    final List<double> rot;
+    const ObjectPose({required this.pos, required this.rot});
+
+    factory ObjectPose.fromJson(Map<String, dynamic> json) => ObjectPose(
+          pos: List<double>.from((json['pos'] as List).map((e) => (e as num).toDouble())),
+          rot: List<double>.from((json['rot'] as List).map((e) => (e as num).toDouble())),
+        );
+
+    Map<String, dynamic> toJson() => {'pos': pos, 'rot': rot};
+  }
+
   class StrokeData {
-    final List<double> anchorPoint;   // [x, y, z] — Immersal 좌표계 기준점
-    final List<double> normal;        // [nx, ny, nz] — 투영 평면 법선
-    final List<List<List<double>>> strokes; // 획 배열 → 점 배열 → [u, v]
-    final double strokeWidth;         // 선 굵기 (미터)
+    /// ref: 탐지된 인접 객체의 Immersal 공간 포즈.
+    ///   렌더링 시 이 포즈 근처에서 동일 객체를 재탐지하는 기준점.
+    final ObjectPose ref;
+
+    /// rel: 앵커의 ref 객체 로컬 프레임 기준 상대 포즈.
+    ///   객체 재탐지 후 이 트랜스폼을 합성해 앵커 월드 포즈 결정.
+    final ObjectPose rel;
+
+    final List<List<List<double>>> strokes; // 획 → 점 → [u, v] (미터)
+    final double strokeWidth;
 
     const StrokeData({
-      required this.anchorPoint,
-      required this.normal,
-      required this.strokes,
-      this.strokeWidth = 0.003,
+      required this.ref, required this.rel,
+      required this.strokes, this.strokeWidth = 0.003,
     });
 
     factory StrokeData.fromJson(Map<String, dynamic> json) => StrokeData(
-          anchorPoint: List<double>.from(
-              (json['anchor_point'] as List).map((e) => (e as num).toDouble())),
-          normal: List<double>.from(
-              (json['normal'] as List).map((e) => (e as num).toDouble())),
+          ref: ObjectPose.fromJson(json['ref'] as Map<String, dynamic>),
+          rel: ObjectPose.fromJson(json['rel'] as Map<String, dynamic>),
           strokes: (json['strokes'] as List)
               .map((s) => (s as List)
-                  .map((p) => (p as List)
-                      .map((v) => (v as num).toDouble())
-                      .toList())
+                  .map((p) => (p as List).map((v) => (v as num).toDouble()).toList())
                   .toList())
               .toList(),
           strokeWidth: (json['stroke_width'] as num? ?? 0.003).toDouble(),
         );
 
     Map<String, dynamic> toJson() => {
-          'anchor_point': anchorPoint,
-          'normal': normal,
+          'ref': ref.toJson(),
+          'rel': rel.toJson(),
           'strokes': strokes,
           'stroke_width': strokeWidth,
         };
@@ -1064,8 +1104,8 @@ pubspec.yaml                      ← ar_flutter_plugin, google_mlkit_hand_landm
     'id': 1,
     'coordinate_system_id': 1,
     'stroke_data': {
-      'anchor_point': [0.0, 0.0, 0.0],
-      'normal': [0.0, 0.0, 1.0],
+      'ref': {'pos': [1.0, 0.0, -2.0], 'rot': [0.0, 0.0, 0.0, 1.0]},
+      'rel': {'pos': [0.0, 0.0, 0.05], 'rot': [0.0, 0.0, 0.0, 1.0]},
       'strokes': [[[0.0, 0.0], [0.05, 0.05]]],
       'stroke_width': 0.003,
     },
