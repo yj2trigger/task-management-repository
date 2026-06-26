@@ -39,6 +39,8 @@ task-management-repository/
 │   │   └── full_plan.md
 │   └── MAP/
 │       ├── VPS_AR_SPEC.md           ← VPS·AR 앵커 기능 스펙 SSOT (MAP 전체)
+│       ├── visitor_log/
+│       │   └── ENVIRONMENT_SETUP.md ← Python 3.12 가상환경 설정 (open3d spike)
 │       └── map-service-user/
 │           ├── CURRENT_STATE.md     ← 진행 상태 · 보안 수정 SSOT
 │           ├── API_DOCS_STANDARDS.md
