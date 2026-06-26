@@ -1,6 +1,6 @@
 # MAP map-service-user — 현재 상태
 
-> 최종 갱신: 2026-05-28
+> 최종 갱신: 2026-06-26
 > 레포: [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user)
 > 작업 디렉토리: `c:\onedrive\_대학교\MAP\git\map-service-user`
 
@@ -41,15 +41,42 @@ Spring Boot 3.4.2 / JDK 21 Virtual Threads 기반 사용자·인증 마이크로
 | Spring REST Docs (Swagger 제거 완료) | ✅ |
 | GlobalExceptionHandler (5종 핸들러) | ✅ |
 | CORS 외부화 (CorsProperties + 환경변수) | ✅ |
+| Kakao 토큰 AES-256-GCM 암호화 | ✅ |
+
+### 보안 수정 완료 (2026-05-28)
+
+| ID | 내용 | 파일 |
+|----|------|------|
+| 1-A | 미인증 요청 401 반환 (기존 403) | `SecurityConfig.java` |
+| 1-B | CORS wildcard + credentials 조합 금지 | `SecurityConfig.java` |
+| 1-C | Redis 장애 시 fail-open 처리 (기존 500) | `RateLimitService.java` |
+| 1-D | XFF 마지막 IP 사용 확정 (신뢰 프록시 아키텍처 기준) | `RateLimitFilter.java` |
+| 1-E | Kakao 토큰 AES-256-GCM 암호화 | `OAuthAccount.java`, `AesEncryptionConverter.java` |
+| 2-A | ObjectMapper.registerModule 생성자 이동 | `RateLimitFilter.java` |
+| 2-B | buildAuthResponse @Transactional 명시 | `AuthService.java` |
 
 ### 미완료 / 백로그
 
 | 항목 | 비고 |
 |------|------|
 | CORS 운영 도메인 확정 | `CORS_ALLOWED_ORIGINS` 환경변수 설정 필요 |
-| OAuth access_token DB 암호화 | AES-256-GCM 적용 필요, 현재 평문 저장 |
 | Apple OAuth2 | 미구현 |
 | 프로덕션 배포 | `.ebextensions-dev`, `.platform` 디렉토리 미존재 — 배포 시 실패 |
+| VPS·AR 앵커 기능 구현 | 설계 완료 → [VPS_AR_SPEC.md](../VPS_AR_SPEC.md) |
+
+---
+
+## 운영 배포 전 필수 환경변수
+
+| 변수명 | 설명 | 필수 여부 |
+|--------|------|----------|
+| `DB_URL` | PostgreSQL JDBC URL | 운영 필수 |
+| `DB_USERNAME` / `DB_PASSWORD` | DB 인증 | 운영 필수 |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | Redis 연결 | 운영 필수 |
+| `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` | RS256 RSA 키 (Base64 PKCS8/X509) | 운영 필수 |
+| `KAKAO_CLIENT_ID` / `KAKAO_CLIENT_SECRET` / `KAKAO_REDIRECT_URI` | 카카오 OAuth | 운영 필수 |
+| `CORS_ALLOWED_ORIGINS` | 허용 오리진 | 운영 필수 |
+| `ENCRYPTION_OAUTH_TOKEN_KEY` | Kakao 토큰 AES-256 키 (Base64 32바이트), 미설정 시 암호화 비활성화 | 운영 필수 |
 
 ---
 

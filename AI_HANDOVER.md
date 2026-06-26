@@ -134,7 +134,7 @@
 - **git push 절대 금지** — 사용자 명시적 승인 후에만 push (`절대 push는 하지 마세요`)
 - 로컬 작업 디렉토리: `c:\onedrive\_대학교\MAP\git\map-service-user`
 - git user: `yj2trigger`, org: `we-meet-trip`
-- 상세 상태: `docs/MAP/CURRENT_STATE.md`
+- 상세 상태: `docs/MAP/map-service-user/CURRENT_STATE.md`
 
 ---
 
