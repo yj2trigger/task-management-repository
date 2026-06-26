@@ -1,7 +1,7 @@
 # MAP 프로젝트 API 문서화 표준
 
 > 적용 범위: `map-service-user` (Spring Boot 3.x, JDK 21)
-> 갱신일: 2026-05-28
+> 갱신일: 2026-05-28 00:00
 > 라이브러리: **Spring REST Docs** (Swagger/springdoc 제거 완료)
 
 ---

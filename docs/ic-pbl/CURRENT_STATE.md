@@ -1,6 +1,6 @@
 # CURRENT_STATE — 아이스크림 키오스크 (ic-pbl)
 
-> Last Update: 2026-06-06
+> Last Update: 2026-06-06 00:00
 > 원본 레포: [yj2trigger/pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl)
 
 ---

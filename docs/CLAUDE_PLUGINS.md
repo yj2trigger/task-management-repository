@@ -1,6 +1,6 @@
 # Claude Code 플러그인/스킬 (user scope)
 
-> 작성일: 2026-06-08
+> 작성일: 2026-06-08 00:00
 > 목적: `~/.claude`에 user-scope로 설치한 플러그인/스킬 SSOT. 모든 프로젝트 세션에서 공통 로드됨 — 프로젝트별 docs에 중복 기록하지 않음.
 > 설치 확인: `claude plugin list`
 

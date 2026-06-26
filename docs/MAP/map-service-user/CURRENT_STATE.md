@@ -1,6 +1,6 @@
 # MAP map-service-user — 현재 상태
 
-> 최종 갱신: 2026-06-26
+> 최종 갱신: 2026-06-26 20:53
 > 레포: [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user)
 > 작업 디렉토리: `c:\onedrive\_대학교\MAP\git\map-service-user`
 
