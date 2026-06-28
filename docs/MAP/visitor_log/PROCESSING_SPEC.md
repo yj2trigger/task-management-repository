@@ -1,7 +1,8 @@
 # visitor_log 처리 모듈 자연어 스펙
 
 > 작성일: 2026-06-27 00:00
-> 구현 위치: `c:\onedrive\_대학교\MAP\git\visitor_log\app\processing\`
+> 최종 갱신: 2026-06-29 00:00
+> 구현 위치: `c:\onedrive\_대학교\MAP\git\visitor_log\`
 > 역할: 이 문서가 설계 의도 SSOT. 코드는 여기서 파생.
 
 ---
@@ -229,4 +230,136 @@ frame_count, current_pcd, latest_points = 0, None, None 초기화
     'q' 키이면 루프 종료
 
 웹캠 해제, 뷰어 닫기, OpenCV 창 닫기
+```
+
+> **주의:** realtime.py의 main() 스펙은 구 버전. 현재 코드는 백그라운드 스레딩·update_geometry·keyboard 엣지 트리거 적용 상태.
+
+---
+
+## spike/viewer.py
+
+> 구현 위치: `spike/viewer.py`
+> 역할: 저장된 .ply 파일 뷰어. 웹캠·모델 없이 즉시 실행.
+
+### apply_keyboard_move(vc)
+
+```
+W: vc.scale(-2)     ← 앞으로
+X: vc.scale(2)      ← 뒤로
+A: vc.rotate(-10, 0) ← 카메라 좌회전
+D: vc.rotate(10, 0)  ← 카메라 우회전
+←: vc.translate(-30, 0) ← 좌이동
+→: vc.translate(30, 0)  ← 우이동
+↑: vc.translate(0, -30) ← 위이동
+↓: vc.translate(0, 30)  ← 아래이동
+```
+
+### load_and_show(vis, files, index, pcd_ref)
+
+```
+path = files[index % len(files)]
+o3d.io.read_point_cloud(path)으로 pcd 로드
+pcd_ref[0] 있으면 뷰어에서 제거
+새 pcd 뷰어에 추가 (최초면 reset_bounding_box=True)
+pcd_ref[0] = pcd
+[현재/전체] 파일명 출력
+```
+
+### main()
+
+```
+OUTPUT_DIR의 .ply 파일 목록 정렬
+비어있으면 안내 메시지 출력 후 종료
+파일 목록 번호와 함께 출력
+
+Open3D Visualizer 생성 (VisualizerWithKeyCallback 아님)
+index = [0], pcd_ref = [None]
+첫 번째 파일 load_and_show
+prev_keys = {'[': False, ']': False, 'q': False}
+
+루프:
+    apply_keyboard_move(vis.get_view_control())
+    vis.poll_events() + update_renderer()
+    cur = 각 키 is_pressed
+    [ 새로 눌리면: index[0] -= 1 → load_and_show
+    ] 새로 눌리면: index[0] += 1 → load_and_show
+    q 새로 눌리면: 루프 종료
+    prev_keys = cur
+
+vis.destroy_window()
+```
+
+---
+
+## spike/server.py
+
+> 구현 위치: `spike/server.py`
+> 역할: S24 Flutter ARCore 앱으로부터 WebSocket으로 depth+RGB+pose 수신, unproject, Open3D 시각화.
+
+### binary 프레임 포맷 (Flutter 앱과 공유 SSOT)
+
+```
+header (92 bytes, little-endian):
+    depth_w, depth_h, rgb_w, rgb_h  int32×4  = 16B
+    fx, fy, cx, cy                  float32×4 = 16B
+    pose[16]                        float32×16 = 64B  (4×4 camera-to-world)
+depth_bytes: float32 × depth_w × depth_h  (ARCore 실측 미터)
+rgb_bytes:   uint8  × depth_w × depth_h × 3  (depth 크기로 리사이즈)
+```
+
+### decode_frame(data) → (depth, rgb, pose, fx, fy, cx, cy)
+
+```
+header 92바이트를 struct.unpack으로 파싱
+depth_bytes 추출 → float32 (depth_h, depth_w) reshape
+rgb_bytes 추출 → uint8 → float32/255
+반환
+```
+
+### process_worker(stop_event) — 스레드
+
+```
+루프 (stop_event 미설정 동안):
+    frame_queue에서 프레임 꺼내기 (timeout=0.1)
+    unproject(rgb, depth, fx, fy, cx, cy) → points (카메라 공간)
+    pose @ xyz_homogeneous → 월드 공간 변환
+    make_o3d_pointcloud(points).voxel_down_sample(VOXEL_SIZE) → pcd
+    result_queue.put_nowait(pcd) — 가득 차면 드롭
+```
+
+### handle_client(websocket) — async
+
+```
+연결 출력
+루프:
+    data = await websocket.recv()
+    decode_frame(data) → 프레임
+    frame_queue.put_nowait(프레임) — 처리 중이면 드롭
+연결 해제 시 출력
+```
+
+### main()
+
+```
+stop_event = threading.Event()
+process_worker 스레드 시작
+WebSocket 서버(asyncio)를 별도 스레드에서 시작
+Open3D VisualizerWithKeyCallback 생성
+current_pcd = None, latest_points = None
+prev_keys = {'s': False, 'q': False, '[': False, ']': False}
+
+루프:
+    result_queue에 pcd 있으면:
+        최초면 add_geometry, 이후는 points/colors 덮어쓰고 update_geometry
+        latest_points 갱신
+    apply_keyboard_move()
+    vis.poll_events() + update_renderer()
+    cur = 각 키 is_pressed (엣지 트리거)
+    s 새로 눌리면: save_ply + visualize_blend
+    q 새로 눌리면: 루프 종료
+    [ / ] 새로 눌리면: 저장 파일 순환
+    prev_keys = cur
+
+stop_event.set()
+vis.destroy_window()
 ```

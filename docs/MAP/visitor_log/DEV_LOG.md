@@ -248,7 +248,53 @@ update_geometry:          5~20ms   ← 이미 개선됨
 
 ---
 
-## 현재 상태 (2026-06-28)
+## 15. q / [ / ] 키 미작동 원인 분석 및 수정
+
+**상황:** q로 종료, [ / ]로 저장 파일 선택이 작동하지 않음.
+
+**원인:** `cv2.waitKey()`는 OpenCV 창에 포커스가 있어야 키를 감지. 3D Point Cloud(Open3D) 창을 보는 동안에는 항상 -1 반환. Open3D `register_key_action_callback`은 반대로 Open3D 창 포커스 필요. 두 창이 분리되어 있어 어느 쪽에 포커스를 줘도 절반의 키가 작동 안 함.
+
+**판단:** 창 포커스와 무관하게 OS 키보드 상태를 직접 폴링하는 `keyboard` 모듈로 통합. `prev_keys` 딕셔너리로 이전 프레임 상태 추적해 키 홀드 중 반복 실행 방지(엣지 트리거).
+
+**결론:** `cv2.waitKey()` 키 감지 제거, `register_key_action_callback` 제거. 모든 키(q, s, [, ]) `keyboard.is_pressed()` + 엣지 트리거로 통합.
+
+---
+
+## 16. viewer.py 신규 — 독립 뷰어
+
+**상황:** 저장된 .ply 파일 확인 시 realtime.py를 실행해야 해서 Depth-Anything 모델 로드(~10초)와 웹캠 초기화까지 기다려야 함. 확인만 할 때 불편.
+
+**판단:** 모델·웹캠 없이 .ply 파일만 로드하는 경량 뷰어를 별도 파일로 분리. 즉시 실행 가능.
+
+**결론:** `spike/viewer.py` 생성. Open3D Visualizer + keyboard 폴링으로 [ / ] 파일 순환, W/X/A/D/화살표 이동.
+
+---
+
+## 17. 키 조작 개선 — scale 부호 방식 발견 및 회전 추가
+
+**상황 1:** W와 X가 모두 같은 방향(뒤로)으로 이동. `vc.scale(1.1)` / `vc.scale(0.9)` 모두 양수라 동일 방향.
+
+**원인:** Open3D `vc.scale()`은 곱셈 배율이 아닌 **부호로 방향을 결정하는 델타값**. 양수 = 앞, 음수 = 뒤.
+
+**결론:** W → `vc.scale(-2)`, X → `vc.scale(2)` 로 수정.
+
+**상황 2:** A/D가 이동만 되고 카메라 회전이 없어 3D 탐색이 불편.
+
+**결론:** A/D → `vc.rotate(±10, 0)` (카메라 회전). 좌우 이동은 ←/→ 화살표로 이동.
+
+---
+
+## 18. server.py 신규 — ARCore WebSocket 수신 서버
+
+**상황:** S24 ARCore 앱에서 depth + RGB + pose를 스트리밍받아 3D 시각화하는 서버 필요. realtime.py는 웹캠 전용이라 분리 필요.
+
+**판단:** WebSocket 수신, 처리, 시각화를 독립 파일로. realtime.py와 시각화 로직 공유하되 카메라·모델 코드 없음. `asyncio + websockets`로 수신, 별도 스레드에서 unproject + voxel_down_sample.
+
+**결론:** `spike/server.py` 생성. binary 프레임 포맷(header 92B + depth_bytes + rgb_bytes) 정의. ARCore 전환 시 DEPTH_SCALE 불필요(실제 미터값).
+
+---
+
+## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
 |------|------|
@@ -262,14 +308,15 @@ update_geometry:          5~20ms   ← 이미 개선됨
 | 정확한 depth (미터) | ❌ ARCore 전환 후 해결 |
 | 카메라 주기적 멈춤 | ⚠️ 원인 파악 완료. ARCore 전환으로 근본 해결 |
 | GPU 가속 검토 | ✅ 분석 완료 — ARCore 전환이 더 효율적으로 결론 |
-| VSCode 정지 | ✅ 외부 터미널 실행으로 해결 |
-| 구조 설계 (시퀀스·클래스 다이어그램) | ✅ README에 추가 완료 |
+| VSCode 정지 | ✅ 외부 cmd 실행으로 해결 |
+| 구조 설계 (시퀀스·클래스 다이어그램) | ✅ yj2trigger/visitor_log README에 추가 |
+| q / [ / ] 키 미작동 | ✅ keyboard 모듈 엣지 트리거로 수정 |
+| viewer.py (독립 뷰어) | ✅ 구현 완료 |
+| server.py (WebSocket 수신) | ✅ 구현 완료 |
+| Flutter ARCore 앱 | ⏳ 미구현 — flutter create 완료, 코드 작성 대기 |
 
 ## 다음 단계
 
-1. **Flutter ARCore 앱 결정** — map-service-client 통합 vs visitor_log 내 spike 앱 (미결)
-2. **Python 수신 서버 결정** — realtime.py 수정 vs server.py 신규 분리 (미결)
-3. **Flutter ARCore 앱 구현** — ARFrame depth + RGB + pose를 WebSocket으로 노트북에 스트리밍
-4. **노트북 수신부 구현** — WebSocket 수신 + DEPTH_SCALE 제거 + unproject 백그라운드 처리
-5. **포인트 클라우드 누적** — ARCore Pose × depth → 오차 없는 누적
-6. `visitor_log` FastAPI 서버 구현 (Plan A — map-service-hub 확장)
+1. **Flutter ARCore 앱 구현** — `spike/arcore_streamer/` 에 ARCore depth + RGB + pose WebSocket 스트리밍
+2. **포인트 클라우드 누적** — ARCore Pose × depth → 오차 없는 누적 (server.py에 추가)
+3. `visitor_log` FastAPI 서버 구현 (Plan A — map-service-hub 확장)
