@@ -172,6 +172,30 @@ result 도착 시 메인 스레드 순차 실행:
 
 ---
 
+## 11. 렌더링 병목 개선 적용
+
+**상황:** 카메라 화면이 2~4초마다 주기적으로 멈추는 문제가 result 처리 시 메인 루프 블로킹임을 확인(§9). 즉시 적용 가능한 두 가지 개선을 적용.
+
+**변경 1: `update_geometry` 교체**
+
+**판단:** `remove_geometry + add_geometry`는 매 프레임 GPU 버퍼를 해제·재할당해 50~200ms 소요. 기존 버퍼에 데이터만 덮어쓰는 `update_geometry`를 쓰면 재할당 없이 5~20ms로 단축.
+
+**결론:**
+```
+최초 1회: add_geometry(current_pcd)          ← GPU 버퍼 할당
+이후 매 프레임: current_pcd.points = new_pcd.points
+               current_pcd.colors = new_pcd.colors
+               update_geometry(current_pcd)  ← 덮어씀만
+```
+
+**변경 2: `voxel_down_sample()` 교체**
+
+**판단:** 자체 구현 `downsample_voxel`은 `np.unique(axis=0)` 기반 O(N logN), 10~100ms. Open3D 내장 `voxel_down_sample()`은 C++ 해시맵 기반 O(N), 1~5ms.
+
+**결론:** `make_o3d_pointcloud(points).voxel_down_sample(VOXEL_SIZE)` 한 줄로 교체. numpy downsample 임포트 제거.
+
+---
+
 ## 현재 상태 (2026-06-28)
 
 | 항목 | 상태 |
