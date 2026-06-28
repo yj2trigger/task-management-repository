@@ -196,6 +196,58 @@ result 도착 시 메인 스레드 순차 실행:
 
 ---
 
+## 12. 구조 전문 분석 및 시퀀스·클래스 다이어그램 작성
+
+**상황:** spike가 어느 정도 작동하게 되어 실제 서비스 전환을 위한 구조를 설계할 필요가 생김.
+
+**판단:** 구현 전에 시퀀스 다이어그램으로 데이터 흐름을 검증하고 클래스 다이어그램으로 컴포넌트 책임을 명확히 해야 한다. 설계 단계에서 발견한 문제:
+- 30fps 전송 시 WiFi 대역폭 초과 → 5fps throttle 결정
+- depth(160×120)와 RGB(640×480) 해상도 불일치 → 전송 전 RGB를 depth 해상도로 리사이즈
+- pose와 frame 분리 전송 시 불일치 가능 → 원자적 번들링 결정
+- 처리 중 수신 프레임 누적 시 메모리 폭발 → 처리 중 신규 프레임 드롭
+
+**결론:** `yj2trigger/visitor_log` README에 Mermaid 시퀀스·클래스 다이어그램과 설계 결정 근거 추가.
+
+---
+
+## 13. 병목 심층 분석 및 최적화 우선순위 결정
+
+**상황:** 렌더링 병목 개선(§11) 후에도 카메라가 1.5~2초 주기로 멈추고, 3D 변환 시점마다 카메라가 정지함.
+
+**분석:**
+
+```
+estimate_depth (CPU):     1.5~2s   ← 진짜 병목 (백그라운드 스레드에 있음)
+unproject (numpy CPU):    50~100ms ← 메인 스레드 블로킹
+voxel_down_sample (O3D):  1~5ms    ← 이미 개선됨
+update_geometry:          5~20ms   ← 이미 개선됨
+```
+
+주기가 일정한 이유: depth_worker 완료 주기 = estimate_depth 소요 시간 = 1.5~2s. 완료될 때마다 메인 스레드에서 unproject가 추가로 블로킹.
+
+**GPU 가속 검토:**
+- Intel Iris Xe: DirectML 지원. ONNX + DirectML으로 400~700ms 예상
+- Google Colab T4: 100~300ms 가능하나 웹캠이 로컬이라 RGB 프레임을 네트워크로 전송해야 함 → 왕복 지연 + Colab 세션 만료 문제
+- 두 방법 모두 depth 추론 자체가 여전히 병목
+
+**판단:** estimate_depth 자체가 spike 전용 임시 컴포넌트. ARCore 전환 시 하드웨어 depth를 30fps로 직접 제공 → 추론 불필요 → 병목 근본 제거. GPU 가속에 시간 투자하는 것보다 ARCore로 이행하는 게 효율적.
+
+**결론:** S24 ARCore WebSocket 스트리밍으로 전환. 노트북 spike는 파이프라인 구조 검증 완료로 종료.
+
+---
+
+## 14. VSCode 정지 문제
+
+**상황:** realtime.py 실행 중 VSCode 전체가 간헐적으로 정지.
+
+**원인:** PyTorch CPU 추론 + Open3D 뷰어 + OpenCV 렌더링이 동시에 CPU/메모리 경쟁. VSCode Python 언어 서버도 같은 프로세스에서 경쟁.
+
+**판단:** spike 실행을 VSCode 내부 터미널에서 하는 것 자체가 문제. VSCode는 편집기로만 쓰고 실행은 분리해야 한다.
+
+**결론:** 이후 실행은 외부 cmd/PowerShell에서 `.venv\Scripts\activate` 후 `python spike/realtime.py`.
+
+---
+
 ## 현재 상태 (2026-06-28)
 
 | 항목 | 상태 |
@@ -208,11 +260,16 @@ result 도착 시 메인 스레드 순차 실행:
 | 저장 파일 [ / ] 선택 | ✅ 작동 |
 | 포인트 클라우드 누적 | ❌ ARCore 전환 후 구현 |
 | 정확한 depth (미터) | ❌ ARCore 전환 후 해결 |
-| 카메라 주기적 멈춤 | ⚠️ 원인 파악 완료. ARCore 전환 시 재설계 |
+| 카메라 주기적 멈춤 | ⚠️ 원인 파악 완료. ARCore 전환으로 근본 해결 |
+| GPU 가속 검토 | ✅ 분석 완료 — ARCore 전환이 더 효율적으로 결론 |
+| VSCode 정지 | ✅ 외부 터미널 실행으로 해결 |
+| 구조 설계 (시퀀스·클래스 다이어그램) | ✅ README에 추가 완료 |
 
 ## 다음 단계
 
-1. **Flutter ARCore 앱 구현** — ARFrame depth + RGB를 WebSocket으로 노트북에 스트리밍
-2. **노트북 수신부 구현** — WebSocket 수신 + DEPTH_SCALE 제거 + 기존 unproject 재사용
-3. **포인트 클라우드 누적** — ARCore Pose × ARCore depth → 정확한 누적
-4. `visitor_log` FastAPI 서버 구현 (Plan A — map-service-hub 확장)
+1. **Flutter ARCore 앱 결정** — map-service-client 통합 vs visitor_log 내 spike 앱 (미결)
+2. **Python 수신 서버 결정** — realtime.py 수정 vs server.py 신규 분리 (미결)
+3. **Flutter ARCore 앱 구현** — ARFrame depth + RGB + pose를 WebSocket으로 노트북에 스트리밍
+4. **노트북 수신부 구현** — WebSocket 수신 + DEPTH_SCALE 제거 + unproject 백그라운드 처리
+5. **포인트 클라우드 누적** — ARCore Pose × depth → 오차 없는 누적
+6. `visitor_log` FastAPI 서버 구현 (Plan A — map-service-hub 확장)
