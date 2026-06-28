@@ -294,6 +294,105 @@ update_geometry:          5~20ms   ← 이미 개선됨
 
 ---
 
+## 19. Flutter ARCore 앱 구현 — arcore_streamer
+
+**상황:** S24 ARCore에서 depth + RGB + pose를 노트북으로 스트리밍하는 Flutter 앱 필요. `flutter create spike/arcore_streamer` 로 프로젝트 생성.
+
+**구현 구조:**
+- `lib/main.dart` (Dart): IP 입력 UI + EventChannel 구독 + WebSocket 전송
+- `android/.../MainActivity.kt` (Kotlin): ARCore 세션 + GLSurfaceView + EventChannel 발행
+
+**판단:** Flutter에서 ARCore Depth API 직접 접근 불가 → Kotlin 네이티브 코드 필수. EventChannel로 Dart에 binary 스트리밍. GLSurfaceView 1×1로 ARCore GL 컨텍스트만 확보 (화면 불필요).
+
+---
+
+## 20. 빌드 오류 연쇄 및 수정
+
+| 오류 | 원인 | 해결 |
+|------|------|------|
+| 한글 경로 Gradle 거부 | `android.overridePathCheck` 미설정 | `gradle.properties`에 `android.overridePathCheck=true` 추가 |
+| NDK 라이선스 미동의 | Platform Tools만 설치 (sdkmanager 없음) | Android Studio 설치 → SDK Manager → Command-line Tools + NDK 설치 → `flutter doctor --android-licenses` |
+| `EGLConfig` import 충돌 | `android.opengl.EGLConfig` 대신 `javax.microedition.khronos.egl.EGLConfig` 필요 | import 교체 |
+| `com.google.ar.core.Image` 미존재 | ARCore 1.46에서 해당 타입명 다름 | 타입 선언 제거, 로컬 변수 타입 추론으로 교체 |
+| `adb install` 한글 경로 실패 | `aapt`가 한글 경로 APK 처리 불가 | `C:\temp\app-debug.apk`로 복사 후 설치 |
+
+**판단:** 한글 경로는 Android 빌드 도구 전반에서 문제. 근본 해결은 프로젝트를 영문 경로로 이동. Spike이므로 우회책 유지.
+
+---
+
+## 21. `TextureNotSetException` — ARCore 텍스처 미설정
+
+**상황:** 앱 설치 후 실행했으나 logcat에 `TextureNotSetException` 무한 반복.
+
+**원인:** ARCore는 카메라 영상을 받을 OpenGL 텍스처 ID를 `session.setCameraTextureName(id)`로 등록해야 함. 등록 없이 `frame.update()` 하면 텍스처 바인딩 실패.
+
+**판단:** `onSurfaceCreated`에서 `GLES20.glGenTextures()`로 텍스처 생성 후 세션 시작 전 등록해야 GL 컨텍스트가 유효한 상태에서 처리 가능.
+
+**결론:** `onSurfaceCreated`에 텍스처 생성 + `session.setCameraTextureName(cameraTextureId)` 추가.
+
+---
+
+## 22. 권한 타이밍 문제 — `onRequestPermissionsResult`
+
+**상황:** 텍스처 수정 후에도 ARCore 세션이 시작 안 됨. `setupSession()` 이 호출됐으나 session이 null.
+
+**원인:** `setupSession()`이 `onSurfaceCreated` (GL 스레드)에서 호출되는데, 이 시점에 카메라 권한 요청 다이얼로그가 아직 안 닫혔거나 승인 전. 권한 없이 `Session(this)` 생성 시 예외로 실패.
+
+**판단:** 권한 승인 결과는 `onRequestPermissionsResult`로 받음. 승인 시점에 세션을 재시도해야 함.
+
+**결론:** `onRequestPermissionsResult` 추가 → 권한 허용 시 `setupSession()` 재호출.
+
+---
+
+## 23. 코드 품질 검토 — 4가지 개선
+
+**상황:** 기능 구현 후 잠재적 버그 사전 검토.
+
+| 문제 | 원인 | 개선 방향 | 효과 |
+|------|------|---------|------|
+| `NotYetAvailableException` 무한 발생 | TrackingState 체크 없이 depth 획득 시도 | `camera.trackingState != TRACKING`이면 return | ARCore 준비 전 불필요한 예외 제거 |
+| 메모리 누수 | 예외 발생 시 `depthImg.close()` 미호출 | `finally` 블록에서 close | ARCore 이미지 버퍼 고갈 방지 |
+| depth rowStride 무시 | `i * pixelStride`로 선형 접근 (행 경계 무시) | `row * rowStride + col * pixelStride`로 교체 | 해상도별 패딩 존재 시 오프셋 오류 방지 |
+| `requestInstall` GL 스레드 호출 | ARCore 설치 확인은 UI 스레드 필요 | `runOnUiThread { setupSession() }` | 크래시 방지 |
+
+---
+
+## 24. `ResourceExhaustedException` — 이미지 버퍼 고갈
+
+**상황:** 앱 재실행 후 `ResourceExhaustedException` 무한 반복.
+
+**원인:** `onDrawFrame`이 60fps로 호출되는데, 이전 프레임 처리(픽셀 루프 등)가 완료되기 전에 다음 `acquireDepthImage16Bits()`가 호출됨. ARCore는 동시에 1개 이상의 이미지를 열어두는 것을 허용하지 않으므로 버퍼 고갈 발생. `Thread.sleep(33)`은 GL 스레드를 블로킹하지만 다음 `onDrawFrame` 호출을 막지 못함.
+
+**판단:** 이전 처리가 끝나기 전에 새 처리를 시작하지 않아야 함. `@Volatile isProcessing` 플래그로 재진입 방지.
+
+**결론:**
+```kotlin
+@Volatile private var isProcessing = false
+
+fun processFrame() {
+    if (isProcessing) return
+    isProcessing = true
+    try { ... } finally { isProcessing = false }
+}
+```
+처리 중 새 프레임 진입 차단 → 버퍼 고갈 방지.
+
+---
+
+## 25. deploy.bat — 빌드·설치 자동화
+
+**상황:** 매번 `flutter build apk`, `copy`, `adb install` 3단계를 수동으로 입력해야 해서 불편.
+
+**판단:** 반복 작업이고 실수 여지 있음. 배치 스크립트로 단일 명령어화.
+
+**결론:** `spike/arcore_streamer/deploy.bat` 생성.
+```cmd
+deploy.bat 192.168.35.202:44861
+```
+한 명령어로 빌드 → 복사 → S24 설치 완료.
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
