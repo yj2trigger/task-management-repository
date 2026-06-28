@@ -393,6 +393,59 @@ deploy.bat 192.168.35.202:44861
 
 ---
 
+## 26. BufferOverflowException — header 크기 오류
+
+**상황:** ARCore 세션 시작 성공 후에도 `BufferOverflowException` 무한 반복. `depth: NxN` 로그가 나타나지 않아 overflow가 depth 처리 이전임을 확인.
+
+**원인:**
+```
+header 실제 크기: 4×int32(16) + 4×float32(16) + 16×float32(64) = 96 bytes
+코드: ByteBuffer.allocate(92)  ← 4 bytes 부족
+→ poseMatrix 마지막 원소 putFloat 시 position=92 = limit → BufferOverflowException
+```
+server.py의 `HEADER_FMT` 주석도 "92 bytes"로 잘못 표기됨 (코드 자체는 `struct.calcsize`로 정확히 계산하므로 런타임 무결).
+
+**판단:** 스펙 문서에서 92로 잘못 계산한 수치를 코드에 하드코딩. `struct.calcsize` 같은 계산 함수 사용이 아닌 수동 입력이라 검증 안 됨.
+
+**결론:** `allocate(92)` → `allocate(96)`. server.py 주석 정정.
+
+---
+
+## 27. acquireCameraImage 실패 시 depthImg 누수
+
+**상황:** 코드 검토 중 발견.
+
+**원인:**
+```kotlin
+val depthImg = frame.acquireDepthImage16Bits()   // 성공
+val camImg = frame.acquireCameraImage()           // 실패 시 예외
+// inner try-finally 미진입 → depthImg.close() 미호출 → ARCore 버퍼 누수
+```
+
+**판단:** ARCore 이미지는 반드시 close() 해야 함. close() 미호출 시 버퍼 고갈 → `ResourceExhaustedException` 재발.
+
+**결론:** 중첩 try-finally로 구조 변경:
+```
+val depthImg = acquireDepthImage16Bits()
+try:
+    val camImg = acquireCameraImage()
+    try: 처리
+    finally: camImg.close()
+finally: depthImg.close()   ← camImg 실패해도 반드시 닫힘
+```
+
+---
+
+## 28. deploy.bat — 강제 종료 + 자동 재실행 추가
+
+**상황:** 매번 빌드 후 S24에서 앱을 수동으로 강제 종료 후 재실행해야 해서 반복적이고 번거로움.
+
+**판단:** `adb shell am force-stop` + `adb shell am start`를 deploy.bat에 포함하면 한 명령어로 전 과정 자동화.
+
+**결론:** deploy.bat를 4단계로 확장: 빌드 → 복사 → force-stop + 설치 → 자동 실행.
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
