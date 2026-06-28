@@ -110,6 +110,68 @@
 
 ---
 
+## 9. 카메라 주기적 멈춤 원인 분석
+
+**상황:** 백그라운드 스레딩 적용 후에도 카메라 화면이 2~4초 간격으로 주기적으로 멈춤.
+
+**원인 분석:**
+depth_worker 완료 주기와 freeze 주기가 일치 → result 도착 시 메인 루프 블로킹이 원인.
+
+```
+result 도착 시 메인 스레드 순차 실행:
+  downsample_voxel(points, 0.02)    ← numpy, 100~500ms
+  make_o3d_pointcloud(points)
+  vis.remove_geometry(current_pcd)  ← O3D 씬 재할당
+  vis.add_geometry(pcd)             ← O3D 씬 재구성
+  vis.update_renderer()             ← GPU 렌더 완료까지 대기
+```
+
+이 5단계가 메인 루프를 통째로 블로킹. 포인트 수가 많을수록 누적 악화.
+
+**판단:** `downsample_voxel`을 worker 스레드로 이동하고 최대 포인트 수 제한 필요. 단, ARCore 전환이 depth 품질 및 정확도 면에서 더 근본적 해결책이므로 노트북 spike에서의 최적화 우선순위는 낮음.
+
+**결론:** 미수정 유지. ARCore + WebSocket 방식으로 전환 시 재설계.
+
+---
+
+## 10. 핸드폰 카메라 → 노트북 처리 방식 분석
+
+**상황:** 노트북 단안 웹캠 + Depth-Anything v2는 물체 근처 왜곡 심함. S24 듀얼 카메라로 정확한 depth 획득하면서 처리는 노트북/서버에서 하고 싶음.
+
+**원인(왜곡):** 단안 깊이 추정은 학습 기반 추론이므로 전경 물체(사람 등)가 크게 차지하면 배경과의 깊이 경계 오차 심함. 스테레오/LiDAR 방식은 이 문제 없음.
+
+**분석한 옵션:**
+
+| 방식 | depth 정확도 | 구현 난이도 | 비고 |
+|------|------------|-----------|------|
+| IP Webcam 앱 (WiFi 스트리밍) | 낮음 (Depth-Anything 그대로) | 매우 쉬움 | 카메라 품질만 개선 |
+| ARCore depth + WebSocket | 높음 (실제 미터, ARCore) | 중간 | 왜곡 근본 해결 |
+| CameraX 듀얼 스테레오 직접 구현 | 중간 | 어려움 | 별도 스테레오 매칭 필요 |
+
+**판단:** ARCore depth + WebSocket 스트리밍이 최적.
+
+```
+[S24 Flutter 앱]
+    ARFrame.acquireDepthImage() → Float32 depth (실제 미터)
+    ARFrame.acquireImage()      → RGB
+    WebSocket으로 노트북에 전송
+
+[노트북 Python]
+    WebSocket 수신
+    기존 unproject() 그대로 사용 (DEPTH_SCALE 제거)
+    Open3D 시각화
+```
+
+**장점:**
+- depth 정확도 ARCore 수준 (cm 단위)
+- 노트북 코드 변경 최소 (수신부 + DEPTH_SCALE 제거만)
+- visitor_log 서버 업로드까지 자연스럽게 연결
+- 왜곡 문제 근본 해결
+
+**결론:** 다음 단계로 Flutter ARCore 앱 + WebSocket 스트리밍 구현. 노트북 spike는 구조 검증 완료로 종료.
+
+---
+
 ## 현재 상태 (2026-06-28)
 
 | 항목 | 상태 |
@@ -122,9 +184,11 @@
 | 저장 파일 [ / ] 선택 | ✅ 작동 |
 | 포인트 클라우드 누적 | ❌ ARCore 전환 후 구현 |
 | 정확한 depth (미터) | ❌ ARCore 전환 후 해결 |
+| 카메라 주기적 멈춤 | ⚠️ 원인 파악 완료. ARCore 전환 시 재설계 |
 
 ## 다음 단계
 
-1. S24에서 Flutter + ARCore Depth API 연동
-2. ARCore Pose × ARCore depth → 누적 포인트 클라우드 구현
-3. `visitor_log` FastAPI 서버 구현 (Plan A — map-service-hub 확장)
+1. **Flutter ARCore 앱 구현** — ARFrame depth + RGB를 WebSocket으로 노트북에 스트리밍
+2. **노트북 수신부 구현** — WebSocket 수신 + DEPTH_SCALE 제거 + 기존 unproject 재사용
+3. **포인트 클라우드 누적** — ARCore Pose × ARCore depth → 정확한 누적
+4. `visitor_log` FastAPI 서버 구현 (Plan A — map-service-hub 확장)
