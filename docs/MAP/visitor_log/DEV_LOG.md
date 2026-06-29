@@ -537,6 +537,31 @@ Z = depth                     # 양수로 수정
 
 ---
 
+## 35. ARCore(OpenGL) vs Open3D(OpenCV) 좌표계 불일치 — extrinsic 수정
+
+**상황:** 평벽 스캔 시 앞/뒤 뷰가 서로 다르고, 측면에서 쐐기 형태 발생. 120°→180°+ 회전 오차.
+
+**원인 분석:**
+- ARCore 카메라 좌표계: OpenGL 방식 (Y위, Z뒤, 카메라 앞=-Z)
+- Open3D TSDF가 기대하는 좌표계: OpenCV 방식 (Y아래, Z앞, 카메라 앞=+Z)
+- 기존 코드: `extrinsic = inv(pose)` → OpenGL 규칙 그대로 Open3D에 전달
+- Open3D가 OpenCV로 해석 → Y·Z 방향이 반전된 채 통합됨
+
+**연쇄 효과:**
+- 표면이 Y·Z 반전된 위치에 배치 → 쐐기/왜곡 형태
+- 앞/뒤 뷰 비대칭
+- 카메라 회전 시 Y·Z 반전이 회전 방향을 왜곡 → 120°가 180°+로 보임
+
+**판단:** ARCore pose에 Y·Z 반전 행렬을 곱해 Open3D가 기대하는 좌표계로 변환 필요.
+
+**결론:**
+```python
+flip_yz = np.diag([1.0, -1.0, -1.0, 1.0])
+extrinsic = flip_yz @ np.linalg.inv(pose)
+```
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
