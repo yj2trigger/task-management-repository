@@ -562,6 +562,34 @@ extrinsic = flip_yz @ np.linalg.inv(pose)
 
 ---
 
+## 36. ARCore Anchor API — 상대 포즈 안정화 아이디어 (미적용)
+
+**아이디어 배경:** camera.pose는 drift 발생 가능. ARCore Anchor는 지속적으로 위치 정제 → 포인트 클라우드 자동 정렬 가능.
+
+**구현 방향 (검토용):**
+```kotlin
+val anchor = session.createAnchor(camera.pose)  // 첫 프레임에 생성
+val relPose = anchor.pose.inverse().compose(camera.pose)  // anchor 기준 상대 포즈
+relPose.toMatrix(poseMatrix, 0)
+```
+
+**적용 시 유용한 상황:** loop closure, 빠른 이동 후 재정렬, Cloud Anchor 공유.
+
+---
+
+## 다음 진행 순서
+
+| 순서 | 작업 | 상태 |
+|------|------|------|
+| 1 | **flip_yz 효과 확인** — server.py extrinsic 수정이 쐐기 왜곡·회전 오차 해결하는지 검증 | ⏳ |
+| 2 | 효과 없으면 **Anchor 기반 포즈**로 전환 — camera.pose → anchor 기준 상대 포즈 | 대기 |
+| 3 | **VOXEL_SIZE 최적화** — 2cm 기준으로 정밀도·성능 균형 조정 | 대기 |
+| 4 | **색상 추가** — 현재 그레이스케일, RGB로 전환 시 시각적 품질 향상 | 대기 |
+| 5 | **Flutter ARCore 앱 → map-service-client 통합** | 대기 |
+| 6 | **visitor_log FastAPI 서버** — 씬 저장·서빙 (Plan A) | 대기 |
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
