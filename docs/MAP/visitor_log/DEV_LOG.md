@@ -514,6 +514,29 @@ Open3D 미지원. Poisson Surface Reconstruction은 부분적으로 가능하나
 
 ---
 
+## 34. 역투영 Y·Z 부호 오류 — 쐐기 형태의 원인
+
+**상황:** 평평한 벽을 스캔했을 때 앞/뒤에서 보면 직사각형(정상)이지만, 옆에서 보면 삼각형/쐐기 형태가 나타남.
+
+**원인:** ARCore 공식 deprojection 수식과 코드가 다름.
+
+| | ARCore 공식 | 기존 코드 (잘못됨) |
+|--|--|--|
+| Y | `(v-cy)/fy * d` | `-(v-cy)/fy * d` (부호 반전) |
+| Z | `+depth` (양수) | `-depth` (음수) |
+
+ARCore 카메라 좌표계는 X우·Y하·Z전방(OpenCV 방식) 사용. Y 부호 반전은 OpenGL 방식을 가정한 오류. Z = -depth는 OpenGL 렌더링 좌표를 가정한 오류.
+
+**판단:** Y 부호 반전과 Z 부호가 포즈 행렬 적용 시 쐐기 왜곡을 만들었음. ARCore pose matrix가 이미 OpenCV→World 변환을 포함하므로 추가 부호 변환 불필요.
+
+**결론:**
+```python
+Y = (vv - cy) / fy * depth   # 부호 반전 제거
+Z = depth                     # 양수로 수정
+```
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
