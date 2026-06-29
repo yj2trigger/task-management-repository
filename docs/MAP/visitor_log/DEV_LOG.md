@@ -498,6 +498,22 @@ vis.add_geometry(current_pcd, reset_bounding_box=first)
 
 ---
 
+## 33. TSDF 볼류메트릭 재구성 + ICP 포즈 정제 도입
+
+**상황:** 단순 포인트 누적 방식은 여러 각도에서 스캔 시 부채꼴 아티팩트 발생. TSDF로 교체.
+
+**TSDF 선택 이유:** 
+- SDF 가중평균: 여러 번 관측한 표면은 SDF→0으로 수렴, 일시적 오인식은 양수로 밀려나 제거
+- 사용자가 요청한 "여러 번 옳게 본 것에 맞추기"와 정확히 일치
+- ICP: ARCore 포즈를 기존 TSDF에 맞게 미세 정렬, 누적 오차 보정
+
+**미구현 / 향후 과제: Surface Completion**
+스캔하지 않은 영역을 자동으로 채워 닫힌 공간을 완성하는 기능.
+ARCore 스캔 데이터만으로는 실제 측정값이 없는 영역을 추론해야 하므로 연구 수준 알고리즘 필요.
+Open3D 미지원. Poisson Surface Reconstruction은 부분적으로 가능하나 완전한 Room Completion은 별도 ML 모델 필요.
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
