@@ -581,12 +581,15 @@ relPose.toMatrix(poseMatrix, 0)
 
 | 순서 | 작업 | 상태 |
 |------|------|------|
-| 1 | **flip_yz 효과 확인** — server.py extrinsic 수정이 쐐기 왜곡·회전 오차 해결하는지 검증 | ⏳ |
-| 2 | 효과 없으면 **Anchor 기반 포즈**로 전환 — camera.pose → anchor 기준 상대 포즈 | 대기 |
-| 3 | **VOXEL_SIZE 최적화** — 2cm 기준으로 정밀도·성능 균형 조정 | 대기 |
-| 4 | **색상 추가** — 현재 그레이스케일, RGB로 전환 시 시각적 품질 향상 | 대기 |
-| 5 | **Flutter ARCore 앱 → map-service-client 통합** | 대기 |
-| 6 | **visitor_log FastAPI 서버** — 씬 저장·서빙 (Plan A) | 대기 |
+| 1 | **depth 패딩 버그 수정** — asShortBuffer() linear index → ByteBuffer + rowStride | ⏳ |
+| 2 | **flip_yz 효과 확인** — depth 수정 후 extrinsic 좌표계 변환 검증 | 대기 |
+| 3 | 효과 없으면 **Anchor 기반 포즈**로 전환 | 대기 |
+| 4 | **acquireRawDepthImage16Bits() 전환** — 정확도 향상, 연산 50% 절감 | 대기 |
+| 5 | **VOXEL_SIZE 최적화** | 대기 |
+| 6 | **색상 추가** — 그레이스케일 → RGB | 대기 |
+| 7 | **RTAB-Map Android 통합 검토** — ARCore 위에서 loop closure·ICP 내장. 현재 파이프라인 대비 품질 비교 후 채택 여부 결정. Intel RealSense는 별도 하드웨어라 S24 불가. | 대기 |
+| 8 | **Flutter ARCore 앱 → map-service-client 통합** | 대기 |
+| 9 | **visitor_log FastAPI 서버** — 씬 저장·서빙 (Plan A) | 대기 |
 
 ---
 
