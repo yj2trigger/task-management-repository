@@ -446,6 +446,58 @@ finally: depthImg.close()   ← camImg 실패해도 반드시 닫힘
 
 ---
 
+## 29. ARCore 연동 성공 — 프레임 전송 확인
+
+**상황:** allocate(96) 수정 + 클린 빌드 + uninstall/install 조합으로 새 APK가 실제로 실행됨. `전송: 160x90` 로그 확인.
+
+**결론:** ARCore depth + WebSocket → server.py 수신 파이프라인 전체 동작 확인.
+
+---
+
+## 30. 0 points 문제 — 빈 pcd가 Open3D에 추가됨
+
+**상황:** 서버가 데이터를 받는데 Open3D 화면 흰색. `The number of points is 0 when creating axis-aligned bounding box` 경고.
+
+**원인:** 카메라 엎어짐/추적 실패 프레임(유효 포인트 0)이 process_worker를 통해 빈 pcd로 Open3D에 추가됨. 이후 update_geometry가 빈 GPU 버퍼에서 올바르게 동작하지 않음.
+
+**결론:** process_worker에서 유효 포인트 없으면 continue로 드롭. 빈 pcd는 result_queue에 넣지 않음.
+
+---
+
+## 31. intrinsics 스케일 오류 — "선 하나" 형태
+
+**상황:** ARCore 데이터 정상 도착, Open3D에 포인트 뜨지만 "이상한 선 하나"만 표시.
+
+**원인:** `camera.imageIntrinsics`는 카메라 이미지 해상도(예: 640×480) 기준 fx/fy/cx/cy. 하지만 depth 이미지는 160×90. 잘못된 비율로 역투영하면 XY 좌표가 극단적으로 찌그러져 선처럼 보임.
+
+**판단:** depth 해상도 / 카메라 해상도 비율로 스케일 필요.
+```kotlin
+scaleX = dw / cw  // 160/640 = 0.25
+fx_depth = fxCam * scaleX
+cx_depth = cxCam * scaleX
+```
+
+**결론:** Kotlin `MainActivity.kt`에 intrinsics 스케일 코드 추가.
+
+---
+
+## 32. update_geometry 점 개수 변화 시 화면 소실
+
+**상황:** 카메라 엎으면 포인트 클라우드가 사라지고 다시 들어도 복구 안 됨.
+
+**원인:** `vis.update_geometry(current_pcd)` — 누적으로 점 개수가 늘어날 때 Open3D GPU 버퍼가 제대로 리사이즈되지 않음. 화면 소실 후 미복구.
+
+**판단:** update_geometry 대신 remove_geometry + add_geometry로 매번 교체. 점 개수 변화에 안전.
+
+**결론:**
+```python
+vis.remove_geometry(current_pcd, reset_bounding_box=False)
+current_pcd = pcd
+vis.add_geometry(current_pcd, reset_bounding_box=first)
+```
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
@@ -465,7 +517,12 @@ finally: depthImg.close()   ← camImg 실패해도 반드시 닫힘
 | q / [ / ] 키 미작동 | ✅ keyboard 모듈 엣지 트리거로 수정 |
 | viewer.py (독립 뷰어) | ✅ 구현 완료 |
 | server.py (WebSocket 수신) | ✅ 구현 완료 |
-| Flutter ARCore 앱 | ⏳ 미구현 — flutter create 완료, 코드 작성 대기 |
+| Flutter ARCore 앱 | ✅ 구현 + 설치 완료 |
+| ARCore → 서버 프레임 전송 | ✅ 확인 완료 (전송: 160x90) |
+| intrinsics 스케일 오류 | ✅ depth/camera 비율로 수정 |
+| update_geometry 점 개수 변화 소실 | ✅ remove+add 방식으로 교체 |
+| 포인트 클라우드 누적 | ✅ process_worker accumulate 구현 |
+| 부채꼴 패턴 | ⚠️ 스윕 스캔의 정상 결과 — 색상·pose 정확도 개선 필요 |
 
 ## 다음 단계
 
