@@ -590,6 +590,22 @@ relPose.toMatrix(poseMatrix, 0)
 
 ---
 
+## 37. depth 마스킹 버그 재확인 — 0x1FFF 잘못, 0xFFFF 맞음
+
+**상황:** 공식 문서 검색 결과 `acquireDepthImage16Bits()`는 16비트 전부가 깊이값, 신뢰도 비트 없음 확인. (신뢰도 비트는 deprecated `acquireDepthImage()` 13비트 버전에만 존재.)
+
+**원인:** §26 근처에서 `and 0x1FFF`(13비트 마스크) 적용한 게 오히려 버그. 8.191m 초과 깊이값을 잘못 잘라냄.
+
+**판단:** 공식 Frame 레퍼런스 문서 기준 — `acquireDepthImage16Bits()`: HardwareBuffer.D_16, little-endian, 0~65535mm, confidence 별도 메서드(`acquireRawDepthConfidenceImage()`)로 분리 제공.
+
+**결론:**
+```kotlin
+val mm = dBuf.get(i).toInt() and 0xFFFF   // 0x1FFF → 0xFFFF
+```
+server.py MAX_DEPTH 8.191 → 5.0 (실내 스캔 유효거리로 조정, 13비트 가정 주석 제거).
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
