@@ -674,6 +674,57 @@ for (row in 0 until dh) for (col in 0 until dw) {
 
 ---
 
+## 41. PointCloud + Depth 동시 렌더링 — 공식A 정답 확인
+
+**목적:** PointCloud(월드 좌표, 기준)와 depth unproject(변환 후보) 동시 렌더링으로 올바른 변환 찾기.
+
+**전송 포맷 (Kotlin):**
+```
+[numPts(i32)] [PointCloud×N×16B] [dw(i32)] [dh(i32)] [depth×dw×dh×4B] [pose×64B] [fx,fy,cx,cy×16B]
+```
+
+**결과:** 공식A `world = pose @ [X, Y, Z, 1]` 에서 초록(PointCloud)과 빨강(depth)이 같은 공간 영역에 존재 → **올바른 변환 확인**.
+
+**이전 TSDF에서 틀렸던 것:**
+```python
+# 모두 틀림
+extrinsic = flip_yz @ inv(pose)   # Y,Z 월드 좌표계를 뒤집음
+extrinsic = inv(pose) @ flip_yz   # 역시 다름
+
+# 올바른 것
+extrinsic = inv(pose)  # flip_yz 불필요
+```
+
+**남은 문제:** 초록과 빨강이 같은 영역이지만 다른 위치/형태 → 원인 분석 필요.
+
+---
+
+## 42. 초록(PointCloud)과 빨강(depth)이 다른 위치·형태인 이유
+
+**원인 1: 다른 데이터 특성**
+- PointCloud: 텍스처 있는 가장자리·코너에만 분포 (SLAM 특징점). 공간적으로 희박.
+- Depth: 모든 표면 픽셀 (uniform). 면 전체를 커버.
+
+**원인 2: Y축 방향 불일치 가능성**
+```
+이미지 좌표: v=0 상단, v=89 하단 (아래로 증가)
+현재 unproject: Y = (v-cy)/fy * d
+  → v < cy (상단): Y 음수
+  → v > cy (하단): Y 양수
+
+ARCore 월드: Y 위가 양수
+  → 카메라 위쪽 = 높은 Y = v가 작음 = v-cy 음수 → 현재 공식 Y 음수
+  → 불일치: 위쪽이 음수가 나오면 반전됨
+
+수정 후보: Y = -(v-cy)/fy * d
+```
+
+**원인 3: 누적 프레임 수 차이**
+- PointCloud: 모든 프레임 누적 (~1000점)
+- Depth: 프레임당 200점 랜덤 샘플 누적
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
