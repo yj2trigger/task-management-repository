@@ -645,6 +645,35 @@ for (row in 0 until dh) for (col in 0 until dw) {
 
 ---
 
+## 39. ARCore PointCloud API 전환 — 좌표계 검증 성공
+
+**상황:** depth image 기반 파이프라인이 좌표계 문제(수렴 패턴)를 해결하지 못해 ARCore PointCloud API로 전환.
+
+**PointCloud API 특성 (공식 문서 확인):**
+- `frame.acquirePointCloud()` → FloatBuffer: [x,y,z,confidence, ...] (포인트당 4 float)
+- 좌표계: 이미 월드 좌표계 (pose 변환 불필요)
+- confidence: 0.0~1.0 float
+- 반드시 `close()` (ResourceExhaustedException 방지)
+
+**결과:**
+- 수렴 패턴 사라짐 ✅
+- 월드 좌표계 정상 동작 ✅
+- 그러나 ~160개/프레임 (희박, 표면 재구성 부적합)
+
+**한계:** PointCloud는 SLAM 추적용 Visual Feature Point. 표면을 채우는 dense scan이 아님. 방 전체 재구성에는 수만 프레임 필요.
+
+**판단:** depth image(dense)의 좌표계 문제 + PointCloud(accurate, sparse)의 밀도 문제 → RTAB-Map(dense + accurate + loop closure)으로 전환 결정.
+
+---
+
+## 40. RTAB-Map Android 앱 테스트 시작
+
+**목적:** 직접 구현 vs RTAB-Map 품질 비교. RTAB-Map이 우리가 만들려 한 것(ICP + Loop Closure + TSDF)의 완성된 구현체.
+
+**방법:** Google Play에서 RTAB-Map 설치 → S24로 자취방 스캔 → 결과물 비교.
+
+---
+
 ## 현재 상태 (2026-06-29)
 
 | 항목 | 상태 |
