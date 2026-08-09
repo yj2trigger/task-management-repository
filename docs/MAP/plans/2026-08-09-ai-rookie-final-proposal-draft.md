@@ -65,16 +65,18 @@ MAP — 모빌리티·날씨·취향을 동시에 고려하는 AI 기반 여행 
 | 구분 | 도전제안서 내용 | 변경 후 내용 | 변경 사유 |
 |---|---|---|---|
 | 참가 트랙 | 일반 트랙 | 일반 트랙(동일) | - |
-| 지도 SDK | KakaoMap SDK | Naver Map SDK(flutter_naver_map) | ⚠️ 전환 사유는 팀만 앎 — 코드상 카카오맵 패키지는 전혀 없음 |
+| 지도 SDK | KakaoMap SDK | Naver Map SDK(flutter_naver_map) | ✅ 팀 확인: 카카오맵 SDK는 사업자등록이 필요해 네이버맵으로 전환 |
 | 킥보드 반경 | 7km (자전거 10km와 구분) | 10km (자전거와 동일 반경으로 통합) | 코드 주석: "속도 차이는 반경이 아니라 소요시간 보정계수(0.7배)로 반영" |
 | 지형 데이터 필터링 | 두루누비 지형데이터로 급경사·비포장 사전 필터링 | 미구현 — 반경 필터만 존재 | ⚠️ 코드에 slope/경사 관련 로직 없음. 2차 기간 과제 가능성 |
-| 외부 API 8종 | 두루누비/관광빅데이터/관광지집중률예측/기상청/카카오로컬/네이버블로그/Google Places/OSRM | 실제 6종: 기상청·카카오로컬·두루누비·네이버블로그·ODsay(신규)·OSRM | ⚠️ 계획 대비 축소 3종, 신규 1종 추가 — 팀 확인 필요 |
-| AI 모델 | Gemini 2.0 Flash | Gemini 2.5 Flash | 모델 세대 업그레이드로 추정 — 팀 확인 필요 |
+| 외부 API 8종 | 두루누비/관광빅데이터/관광지집중률예측/기상청/카카오로컬(SDK포함)/네이버블로그/Google Places/OSRM | 실제 6종: 기상청·카카오로컬(API만, SDK는 미사용)·두루누비·네이버블로그·**ODsay(신규)**·OSRM | ✅ 항목별 대조 완료 — 빠진 3종(관광빅데이터·관광지집중률예측·Google Places)은 코드에 흔적 없음. ODsay는 원문에 없던 신규 추가(대중교통 경로) |
+| AI 모델 | Gemini 2.0 Flash | Gemini 2.5 Flash | ✅ 웹 조사 결과 — "2.0은 API 이용 안 됐다"는 팀 기억은 틀림(2.0 Flash는 2025-02-05 API GA). Gemini 2.1은 애초에 존재하지 않음(2.0 다음이 바로 2.5). 결정적 이유로 보이는 건 **Gemini 2.0 Flash/Flash-Lite가 2026-06-01부로 서비스 종료**된 것 — 도전제안서 작성일(2026-05-08)엔 2.0이 아직 살아있었으나 이후 종료돼 강제 마이그레이션했을 가능성이 큼(2.5의 성능 향상도 사실이지만 타이밍상 주된 이유는 종료로 추정). 팀 기억 재확인 권장 |
 | 인증 | JWT 자체인증 우선, 카카오 OAuth "추후 추가" | JWT(RS256+리프레시 로테이션) + 카카오 OAuth 둘 다 구현 완료 | 계획보다 진전됨 |
 | 구현 범위 | 장소추천+경로최적화+지도시각화+HITL | +채팅(백엔드)·리뷰AI요약·실시간위치공유·카메라비전챗봇·마이페이지/관심사·따릉이연동 신규 추가 | 범위 확장 — 1.3 참고 |
 | 레포 구성 | "4-Repo 단일환경배포" | 7개 레포(user/agent/hub/admin/yolo/client/infra) + docker-compose.admin.yml 분리 + nginx 프록시 + Prometheus/Grafana | 서비스 분화 및 운영 인프라 고도화 |
 | Human-in-the-Loop 3단계 | 완전 재탐색 / AI 추천 장소 선택 / 직접 수정 | API로는 `POST /recommend`(신규)·`POST /route`(선택장소 경로화)·`/edit`(수정)·`/research`(mode1 일부 재탐색) 4갈래로 구현 | 개념은 유지, 더 세분화됨 |
 | 모빌리티 반경 필터의 기준점 | (명시 안 됨, 취지상 "사용자 출발지 기준") | 1차 기간엔 후보 장소들 자기 좌표 평균으로 임시 대체 — 사용자 출발지 좌표 입력은 아직 요청 스키마에 없음(`RecommendRequest`/`AgentRequest` 확인) | 🚧 미완성 — `rules_filter`(agent) 코드·테스트로 확인. 2차 기간 최우선 과제로 계획 |
+
+> Gemini 버전 출처: [Gemini 2.0 model updates — Google Developers Blog (2025-02)](https://blog.google/technology/google-deepmind/gemini-model-updates-february-2025/), [Gemini 2.5 Flash — Google AI for Developers](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash), [Gemini 2.0 Flash — Google AI for Developers](https://ai.google.dev/gemini-api/docs/models/gemini-2.0-flash)(2.0 Flash/Flash-Lite 2026-06-01 종료 명시)
 
 ---
 
