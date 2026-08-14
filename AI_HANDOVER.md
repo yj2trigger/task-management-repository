@@ -27,8 +27,9 @@
 |---------|------|----------|
 | ic-pbl (EDK) | [pmg-ic-pbl](https://github.com/yj2trigger/pmg-ic-pbl) | EDK 전체 구현 완료, PR #16 gemini-review 실패로 blocked |
 | ESG | [ESG](https://github.com/yj2trigger/ESG) | 핵심 기능 완료 + 운영 중 |
-| MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | 인증 도메인 구현 완료, 코드 개선 완료 |
+| MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | recommend/schedule/trip 도메인 구현됨(develop). 인증은 미병합(`feat/login-dev`). 재사용캐시 설계 진행 중 |
 | MAP (visitor_log) | 로컬 전용 `c:\onedrive\_대학교\MAP\git\visitor_log` | VPS·AR 씬 저장·블렌딩 서비스 — spike 단계 |
+| MAP (map-yoloservice) | `c:\onedrive\_대학교\MAP\git\map-yoloservice` | 카메라 실시간 인식(YOLO+Gemini Vision). 2026-08-14 infra 컨테이너 편입 + 실기 WebSocket 연결 검증 완료. 상세: `docs/MAP/map-yoloservice/DEV_LOG.md` |
 
 ---
 
@@ -39,7 +40,7 @@
 | 1 | `COLLABORATION_RULES.md` | AI가 따라야 할 협업 규칙 |
 | 2 | `docs/ic-pbl/CURRENT_STATE.md` | ic-pbl 현재 진행 상태 |
 | 3 | `docs/ESG/CURRENT_STATE.md` | ESG 현재 진행 상태 |
-| 4 | `docs/MAP/CURRENT_STATE.md` | MAP 현재 진행 상태 |
+| 4 | `docs/MAP/map-service-user/CURRENT_STATE.md` | MAP(map-service-user) 현재 진행 상태 |
 | 5 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
 | 6 | `tasks/backlog.md` | 대기 중인 태스크 |
 
@@ -112,29 +113,35 @@
 
 ## MAP 프로젝트 인계 정보
 
-### 현재 상태: 인증 도메인 구현 완료
+### 현재 상태 (2026-07-07 재검증): 인증 미병합, recommend/schedule/trip 구현됨, 재사용캐시 설계 중
 
-레포: `we-meet-trip/map-service-user` (Spring Boot 3.4.2, JDK 21 Virtual Threads)
+레포: `we-meet-trip/map-service-user` (Spring Boot 3.4.2, JDK 21)
 
-**완료된 작업 (2026-05-28):**
-- Swagger → Spring REST Docs 마이그레이션
-- AuthControllerTest 전원 403 수정 (`addFilters = false`)
-- RateLimitService Lua 스크립트 (atomic rate limiting)
-- RefreshToken device 필드 제거 + V2 Flyway 마이그레이션
-- CORS 외부화 (CorsProperties, `CORS_ALLOWED_ORIGINS` 환경변수)
-- JwtService 생성자 초기화, KakaoOAuthService RestClient 주입 전환
+**⚠️ 2026-06-26 이전 버전은 "인증 도메인 구현 완료"라고 적혀 있었으나 틀렸음.** 실제로는:
+- develop엔 `AuthPlaceholder.java`만 있음(빈 클래스). PR#7은 CLOSED(폐기). 실제 auth 구현은 `feat/login-dev` 브랜치(PR 미생성, develop 미반영).
+- develop엔 대신 recommend/schedule/trip 3개 도메인이 PR #9~#20으로 이미 구현되어 있음(이전 문서에 전혀 언급 안 됐던 부분).
+
+**완료된 작업 (develop, ~PR #20):**
+- recommend: 생성/폴링/편집/재생성 4개 엔드포인트, agent 연동(`AgentClient`), Redis Streams 비동기 수신(`RecommendJobsConsumer`, ack/재시도/DLQ)
+- schedule: 저장 API(`ScheduleService.persist`), Flyway `schedules` 테이블
+- trip: `POST /api/v1/trip/generate` 동기 facade (client가 실제로 쓰는 엔드포인트)
+
+**진행 중 (2026-07-07 시작, 브랜치 `feature/UserRecommendReuseCache`):**
+- 추천 재사용/idempotency 설계 — client 재시도로 인한 agent 중복호출 방지가 핵심 목표
+- **실제 위험 지점은 `/api/v1/trip/generate`**: 서버 내부 120초 동기 폴링(`TripService.awaitDraft`) vs 클라이언트 타임아웃 미설정 → 배포 시(ALB 등) 조기 연결종료+재시도로 agent/LLM 이중호출 가능. 아직 방어 로직 없음.
+- SSOT 문서(`소프트웨어_아키텍처_설계서_ver_5.0.pdf` §7.1) 재확인 결과 recommend/schedule 흐름이 문서 의도(schedule 먼저 생성 → `(schedule_id, stage)`로 추천 누적)와 다르게 구현돼 있음을 발견 — 다른 팀원 작성 코드라 임의 수정 안 하고 팀 논의 필요 상태로 보류.
+- user_id(auth) 의존 여부는 재사용캐시 최종 범위 확정 후 결정 예정(현재 결정 안 됨).
 
 **미완료 / 다음 작업:**
-- CORS 운영 도메인 확정 후 `CORS_ALLOWED_ORIGINS` 환경변수 설정
-- OAuth access_token DB 암호화 (AES-256-GCM, 현재 평문 저장)
-- Apple OAuth2 구현
-- 프로덕션 배포 (CI/CD 파이프라인)
-- VPS·AR 앵커 기능 구현 (설계 완료 → `docs/MAP/VPS_AR_SPEC.md` 참고)
+- `feat/login-dev` develop 병합 (auth 도메인) — `trips`/`trip_recommendations`/`trip_segments` 명명이 SSOT의 `schedules` 통일 방침과 충돌, 병합 전 정리 필요
+- 재사용캐시 최종 스코프 확정 → user_id 필요 여부 결정
+- Apple OAuth2, 프로덕션 배포(CI/CD), VPS·AR 앵커 (`docs/MAP/VPS_AR_SPEC.md`)
 
 **주의사항:**
 - **git push 절대 금지** — 사용자 명시적 승인 후에만 push (`절대 push는 하지 마세요`)
 - 로컬 작업 디렉토리: `c:\onedrive\_대학교\MAP\git\map-service-user`
 - git user: `yj2trigger`, org: `we-meet-trip`
+- **recommend/schedule 도메인은 다른 팀원 작성분 — SSOT 불일치 발견해도 팀 논의 없이 임의로 고치지 않는다**
 - 상세 상태: `docs/MAP/map-service-user/CURRENT_STATE.md`
 
 ---
