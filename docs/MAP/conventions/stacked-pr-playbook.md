@@ -4,7 +4,9 @@
 > 적용 범위: we-meet-trip 조직의 map-service-user / -client / -hub / -agent / -infra / -admin 전부.
 > 빠른 참조 → [`stacked-pr-cheatsheet.md`](./stacked-pr-cheatsheet.md)
 > 도입 근거 데이터 → [`pr-baseline-2026-09.md`](./pr-baseline-2026-09.md)
-> 개인(jemu) 커밋·이슈 컨벤션과는 별개 문서. 그쪽은 [`../map-service-user/conventions/jemu-workflow.md`](../map-service-user/conventions/jemu-workflow.md).
+> **우선순위**: PR 분할·플래그·머지 순서는 이 문서가 우선한다.
+> 커밋 메시지·이슈·PR 본문 형식은 [`../map-service-user/conventions/jemu-workflow.md`](../map-service-user/conventions/jemu-workflow.md) 가 SSOT이며,
+> 그 문서의 "관심사별 브랜치 → PR 배치 오픈" 절차는 이 문서의 스택 절차(5장)로 대체된다.
 
 ---
 

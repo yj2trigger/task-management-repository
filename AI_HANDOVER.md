@@ -41,8 +41,9 @@
 | 2 | `docs/ic-pbl/CURRENT_STATE.md` | ic-pbl 현재 진행 상태 |
 | 3 | `docs/ESG/CURRENT_STATE.md` | ESG 현재 진행 상태 |
 | 4 | `docs/MAP/map-service-user/CURRENT_STATE.md` | MAP(map-service-user) 현재 진행 상태 |
-| 5 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
-| 6 | `tasks/backlog.md` | 대기 중인 태스크 |
+| 5 | `docs/MAP/conventions/stacked-pr-playbook.md` | **MAP 작업이면 필수** — PR 분할·플래그 기준 SSOT (요약: 같은 폴더 `stacked-pr-cheatsheet.md`) |
+| 6 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
+| 7 | `tasks/backlog.md` | 대기 중인 태스크 |
 
 ---
 
@@ -112,6 +113,11 @@
 ---
 
 ## MAP 프로젝트 인계 정보
+
+> **MAP 6개 레포 공통 작업 규약**: [`docs/MAP/conventions/stacked-pr-playbook.md`](./docs/MAP/conventions/stacked-pr-playbook.md)
+> 브랜치를 어디서 끊고 언제 PR을 여는지, 플래그 기본값, 마이그레이션 제약이 여기에 있다.
+> 코드 작업 전에 읽는다. 아래 「주의사항」의 **AI가 직접 push하지 않는 원칙은 그대로 유효**하며,
+> 플레이북은 사용자가 브랜치·PR을 만들 때의 기준이다.
 
 ### 현재 상태 (2026-07-07 재검증): 인증 미병합, recommend/schedule/trip 구현됨, 재사용캐시 설계 중
 

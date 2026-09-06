@@ -1,5 +1,9 @@
 # jemu(@Ryu-Jemu) 작업 패턴 — 완전 레퍼런스
 
+> **PR 분할·플래그·머지 순서는 [`../../conventions/stacked-pr-playbook.md`](../../conventions/stacked-pr-playbook.md) 가 우선한다.**
+> 이 문서는 jemu(@Ryu-Jemu)의 *관찰된* 작업 패턴 기록이고, 플레이북은 앞으로 *따를* 규약이다.
+> 커밋 메시지·이슈·PR 본문 형식은 이 문서가 계속 SSOT.
+
 > **SSOT**: 이 파일이 jemu 컨벤션의 단일 진실 공급원.
 > 분석 근거: PR #2~#18 전체 diff·body·review, Issue #1~#8, develop 브랜치 전체 커밋 타임라인 전수 조사.
 > skeleton 초기화 작업 제외.
