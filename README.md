@@ -39,6 +39,10 @@ task-management-repository/
 │   │   └── full_plan.md
 │   └── MAP/
 │       ├── VPS_AR_SPEC.md           ← VPS·AR 앵커 기능 스펙 SSOT (MAP 전체)
+│       ├── conventions/             ← MAP 전체 공통 규약 (레포 횡단)
+│       │   ├── stacked-pr-playbook.md    ← 단계별 PR·플래그 기준 SSOT
+│       │   ├── stacked-pr-cheatsheet.md  ← 빠른 참조
+│       │   └── pr-baseline-2026-09.md    ← 도입 근거 측정치 · 재측정 스크립트
 │       ├── visitor_log/
 │       │   └── ENVIRONMENT_SETUP.md ← Python 3.12 가상환경 설정 (open3d spike)
 │       └── map-service-user/
