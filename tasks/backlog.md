@@ -4,6 +4,24 @@
 
 ---
 
+## [MAP] 단계별 PR(스택) 방식 첫 적용
+
+> 기준: [`docs/MAP/conventions/stacked-pr-playbook.md`](../docs/MAP/conventions/stacked-pr-playbook.md)
+> 측정 기준선: [`pr-baseline-2026-09.md`](../docs/MAP/conventions/pr-baseline-2026-09.md)
+> 배경: 현재 PR 추가 줄 중앙값 754 / 파일 11개. 목표는 400줄 / 10파일 이하.
+
+- [ ] STACK-01: 다음 서버 기능 1개를 대상으로 선정 (user 또는 hub)
+- [ ] STACK-02: 플레이북 3장대로 ①스키마 ②로직 ③서비스(플래그 off) ④배선 4단 분할
+- [ ] STACK-03: `gh pr create --base <앞 브랜치>` 로 스택 오픈, 아래부터 순차 머지
+- [ ] STACK-04: 플래그 기본값 false 확인 → test 환경만 on → prod on
+- [ ] STACK-05: 플래그·옛 경로 제거 PR 별도 생성
+- [ ] STACK-06: 적용 후기 기록 — 연쇄 리베이스 부담이 크면 Graphite 도입 검토 (플레이북 6장)
+
+**미결**: 브랜치 명명이 client는 이슈번호형(`feat/#45-...`), 서버는 기능명형으로 갈려 있음.
+스택을 쓰면 브랜치 수가 늘어나므로 이때 통일 여부를 결정한다.
+
+---
+
 ## [ESG] IoT 구현
 
 > 설계 상세: [ADR-007 — Adaptive Polling 전략](../portfolio/ESG/decisions/ADR-007-iot-polling-strategy.md)

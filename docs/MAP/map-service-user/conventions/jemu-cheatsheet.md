@@ -1,5 +1,9 @@
 # jemu 워크플로우 치트시트
 
+> **PR 분할·플래그·머지 순서는 [`../../conventions/stacked-pr-playbook.md`](../../conventions/stacked-pr-playbook.md) 가 우선한다.**
+> 이 문서는 jemu(@Ryu-Jemu)의 *관찰된* 작업 패턴 기록이고, 플레이북은 앞으로 *따를* 규약이다.
+> 커밋 메시지·이슈·PR 본문 형식은 이 문서가 계속 SSOT.
+
 > 빠른 참조용. 예시·엣지케이스 → [`jemu-workflow.md`](./jemu-workflow.md)
 
 ---
