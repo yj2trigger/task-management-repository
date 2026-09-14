@@ -29,6 +29,8 @@
 
 [Docker Desktop](https://www.docker.com/products/docker-desktop) 설치 필요.
 
+> 로컬 PC 도커의 현재 상태(메모리 상한, 디스크 공간 문제와 대응)는 [DOCKER_LOCAL_STATUS.md](../DOCKER_LOCAL_STATUS.md) 참고.
+
 ### 2. DB + Redis 컨테이너 시작
 
 ```bash

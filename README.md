@@ -39,6 +39,7 @@ task-management-repository/
 │   │   └── full_plan.md
 │   └── MAP/
 │       ├── VPS_AR_SPEC.md           ← VPS·AR 앵커 기능 스펙 SSOT (MAP 전체)
+│       ├── DOCKER_LOCAL_STATUS.md   ← 로컬 PC 도커 현황 · C: 공간 부족 경위와 재발 대응
 │       ├── conventions/             ← MAP 전체 공통 규약 (레포 횡단)
 │       │   ├── stacked-pr-playbook.md    ← 단계별 PR·플래그 기준 SSOT
 │       │   ├── stacked-pr-cheatsheet.md  ← 빠른 참조
