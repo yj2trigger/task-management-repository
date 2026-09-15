@@ -42,10 +42,13 @@ git push -u origin feat/b
 gh pr create --base feat/a
 
 # 머지는 반드시 아래부터: feat/a → feat/b → feat/c
-# a 머지되면 b의 base는 GitHub이 develop으로 자동 변경
+# 머지 방식은 Merge commit 만 (squash·rebase 금지)
+# a 머지 후 b 의 base 는 자동으로 안 바뀐다(자동 삭제 꺼짐) → 직접 바꾼다
+gh pr edit <b번호> --base develop
 
-# 아래 PR 수정 시 연쇄 리베이스
-git checkout feat/b && git rebase feat/a && git push --force-with-lease
+# 아래 PR 수정 시 연쇄 병합 (리베이스·강제 푸시 없음)
+git checkout feat/b && git merge feat/a && git push
+# develop 이 앞서갔을 때도: git merge origin/develop
 ```
 
 ---
@@ -98,4 +101,8 @@ CI 설정 · `.env`/compose/Dockerfile · 배포 직후 핫픽스 · 문서. inf
 [ ] 서버면 테스트 포함
 [ ] base 브랜치 확인
 [ ] 플래그 on 했으면 제거 이슈 생성
+
+머지할 때
+[ ] Merge commit 으로 머지 (squash·rebase 금지)
+[ ] 스택이면 아래 PR 머지 후 base → develop 로 바꿨는지
 ```

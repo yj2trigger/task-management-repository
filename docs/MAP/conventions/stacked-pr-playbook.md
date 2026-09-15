@@ -190,20 +190,39 @@ PR #②의 diff에는 #①의 내용이 나타나지 않는다. 리뷰어는 해
 
 ### 5.2 머지 순서
 
-**반드시 아래부터.** ① 머지 → GitHub이 ②의 base를 자동으로 `develop`으로 바꿔줌 → ② 머지 → ③ …
+**반드시 아래부터.** 머지 방식은 **Merge commit** 만 쓴다(squash·rebase 머지 금지 — 세 레포 모두 켜져 있어 실수로 누를 수 있다).
 
-### 5.3 아래 PR이 수정되면 (연쇄 리베이스)
+```bash
+# ① 머지 (웹 UI 에서 "Create a merge commit")
+# ② 의 base 를 develop 으로 직접 바꾼다
+gh pr edit <②번호> --base develop
+# ② 머지 → ③ 의 base 를 develop 으로 → ③ 머지 …
+```
+
+**base 는 자동으로 안 바뀐다.** GitHub 은 base 브랜치가 *삭제될 때만* 그 위의 PR 을 develop 으로 옮겨 준다. user·hub·client 세 레포 모두 "머지 후 브랜치 자동 삭제"가 꺼져 있다(2026-09-16 확인) — ① 을 머지해도 ① 브랜치가 남아 ② 의 base 는 ① 그대로다.
+그대로 ② 를 머지하면 ② 의 변경이 **이미 끝난 ① 브랜치로 들어가고 develop 에는 안 들어간다.** 머지 버튼을 누르기 전에 base 가 `develop` 인지 확인한다.
+대안: ① 머지 직후 ① 브랜치를 지우면 GitHub 이 ② 를 develop 으로 옮겨 준다(레포 설정에서 자동 삭제를 켜도 같다 — 조직 관리자 권한 필요).
+
+### 5.3 아래 PR이 수정되면 (연쇄 병합)
+
+아래 브랜치의 새 커밋을 위 브랜치에 **병합**해 올린다. 리베이스·강제 푸시는 쓰지 않는다.
 
 ```bash
 git checkout feat/weather-rule
-git rebase feat/weather-schema
-git push --force-with-lease
+git merge feat/weather-schema     # 아래 PR 의 새 커밋을 받는다
+git push                          # 일반 push (강제 불필요)
 git checkout feat/weather-watcher
-git rebase feat/weather-rule
-git push --force-with-lease
+git merge feat/weather-rule
+git push
+# develop 이 앞서갔을 때도 같다: git merge origin/develop
 ```
 
-`--force-with-lease`를 쓴다(`--force` 금지). 이 연쇄 작업이 귀찮아지는 시점이 도구 도입 시점이다.
+위 PR 화면에는 여전히 그 단계 변경만 보인다(GitHub 은 두 브랜치의 공통 조상 기준으로 비교한다). CI 도 새 아래 단계를 기준으로 다시 돈다.
+
+리베이스를 쓰지 않는 이유: 이 팀은 Merge commit 으로 머지하므로 아래 단계 커밋이 develop 에 **같은 커밋 그대로** 들어간다 — 위 브랜치가 옛 커밋을 품고 있어도 겹쳐 보이지 않는다. 리베이스가 필요해지는 건 squash 머지(커밋을 뭉쳐 새 커밋으로 넣음)를 쓸 때인데, 5.2 에서 금지했다. 리베이스는 커밋을 새로 만들어 이미 내려받은 사람과 어긋나게 하고 리뷰 코멘트 위치를 잃게 하며, 강제 푸시를 요구한다(전역 규칙상 금지). 2.1 의 4번("develop 을 받는 병합 커밋")과도 같은 방식이다.
+대가는 "merge: …를 받는다" 병합 커밋이 기록에 몇 개 늘어나는 것뿐이다. 이 연쇄 작업이 귀찮아지는 시점이 도구 도입 시점이다.
+
+> 2026-09-16 개정: 처음 판은 이 절을 `git rebase` + `git push --force-with-lease` 로 적었고, 5.2 에 "base 가 자동으로 바뀐다"고 적었다. 팀의 실제 머지 방식(Merge commit)과 레포 설정(자동 삭제 꺼짐)을 확인하고 병합 방식으로 고쳤다.
 
 ---
 
@@ -212,7 +231,7 @@ git push --force-with-lease
 | 도구 | 언제 |
 |------|------|
 | `gh pr create --base` | **지금 이걸로 시작한다.** 3단 정도까지 충분 |
-| Graphite (`gt`) | 스택이 4단 이상, 연쇄 리베이스가 잦아질 때. `gt submit`으로 스택 전체 푸시·base 재지정. 소규모 팀 무료 티어 |
+| Graphite (`gt`) | 스택이 4단 이상, 연쇄 병합·base 재지정이 잦아질 때. `gt submit`으로 스택 전체 푸시·base 재지정. 소규모 팀 무료 티어. 단 기본 흐름이 리베이스라 5.3 과 맞는지 먼저 확인 |
 | ghstack | 로컬 커밋 1개 = PR 1개 매핑. PyTorch가 사용 |
 | git-spr (ejoffe/spr) | 위와 같은 개념의 Go 구현 |
 | Sapling / jj (Jujutsu) | VCS를 갈아엎는 쪽. 팀 전체 학습 비용 때문에 현 규모에는 과함 |
@@ -247,6 +266,8 @@ git push --force-with-lease
 - [ ] 서버 레포면 테스트 파일이 포함됐는가
 - [ ] base 브랜치가 맞는가 (스택이면 아래 단계, 아니면 develop)
 - [ ] 플래그를 on 한 PR이라면 제거 이슈를 열었는가
+- [ ] (머지할 때) 머지 방식이 Merge commit 인가 — squash·rebase 금지
+- [ ] (머지할 때) 스택이면 아래 PR 머지 후 이 PR 의 base 를 develop 으로 바꿨는가
 
 ---
 

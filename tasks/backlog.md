@@ -10,12 +10,15 @@
 > 측정 기준선: [`pr-baseline-2026-09.md`](../docs/MAP/conventions/pr-baseline-2026-09.md)
 > 배경: 현재 PR 추가 줄 중앙값 754 / 파일 11개. 목표는 400줄 / 10파일 이하.
 
-- [ ] STACK-01: 다음 서버 기능 1개를 대상으로 선정 (user 또는 hub)
-- [ ] STACK-02: 플레이북 3장대로 ①스키마 ②로직 ③서비스(플래그 off) ④배선 4단 분할
-- [ ] STACK-03: `gh pr create --base <앞 브랜치>` 로 스택 오픈, 아래부터 순차 머지
+- [x] STACK-01: 다음 서버 기능 1개를 대상으로 선정 (user 또는 hub)
+      — hub 대중교통 실제 노선 좌표(hub#16). hub 만 400줄을 넘어(605줄) 스택 대상, user·client 는 레포당 PR 1개
+- [x] STACK-02: 플레이북 3장대로 ①스키마 ②로직 ③서비스(플래그 off) ④배선 4단 분할
+      — DB 스키마가 없어 ①②를 합친 3단(`parse` / `client` / `wire`), 플래그 `TRANSIT_LANE_ENABLED` 기본 false
+- [ ] STACK-03: `gh pr create --base <앞 브랜치>` 로 스택 오픈, 아래부터 순차 머지 (①=hub#18 열림)
+      — 머지는 Merge commit, 아래 머지 후 위 PR base 를 develop 으로 직접 변경(플레이북 5.2, 2026-09-16 개정)
 - [ ] STACK-04: 플래그 기본값 false 확인 → test 환경만 on → prod on
 - [ ] STACK-05: 플래그·옛 경로 제거 PR 별도 생성
-- [ ] STACK-06: 적용 후기 기록 — 연쇄 리베이스 부담이 크면 Graphite 도입 검토 (플레이북 6장)
+- [ ] STACK-06: 적용 후기 기록 — 연쇄 병합·base 재지정 부담이 크면 Graphite 도입 검토 (플레이북 6장)
 
 **미결**: 브랜치 명명이 client는 이슈번호형(`feat/#45-...`), 서버는 기능명형으로 갈려 있음.
 스택을 쓰면 브랜치 수가 늘어나므로 이때 통일 여부를 결정한다.
