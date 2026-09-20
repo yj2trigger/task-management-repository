@@ -45,7 +45,7 @@
 | 5 | `docs/MAP/conventions/stacked-pr-playbook.md` | **MAP 작업이면 필수** — PR 분할·플래그 기준 SSOT (요약: 같은 폴더 `stacked-pr-cheatsheet.md`) |
 | 6 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
 | 7 | `tasks/backlog.md` | 대기 중인 태스크 |
-| 8 | `docs/sign-language/README.md` | **수어 번역 작업이면 필수** — 문서 지도·데이터 위치·진행 상태. SSOT는 같은 폴더 `키포인트-설계-기록-2026-09-20.md` |
+| 8 | `docs/sign-language/HANDOVER.md` | **수어 번역 작업이면 필수** — 배경 없이 이어받는 콜드 스타트 인계 문서(목표·규칙·경위·상태·다음 행동·위험). 이어서 같은 폴더 `README.md`(문서 지도·결정 원장)와 `키포인트-설계-기록-2026-09-20.md`(SSOT) |
 
 ---
 
