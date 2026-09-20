@@ -37,10 +37,13 @@ task-management-repository/
 │   ├── ESG/
 │   │   ├── CURRENT_STATE.md         ← 진행 상태 · 이슈 이력 SSOT
 │   │   └── full_plan.md
+│   ├── sign-language/               ← 수어 영상 → 한국어 문장 번역 (설계 단계)
+│   │   ├── README.md                ← 진입 문서: 문서 지도 · 하위 프로젝트 · 데이터 위치 · 임시 산출물
+│   │   ├── 키포인트-설계-기록-2026-09-20.md   ← SSOT: 결정 로그 · 데이터 실측 · 정정 이력 · A 설계 초안
+│   │   └── 이전-검토-자료-대조-2026-09-20.md  ← 초기 검토 자료 요약과 실측 대조 · 이월 결정 항목
 │   └── MAP/
 │       ├── VPS_AR_SPEC.md           ← VPS·AR 앵커 기능 스펙 SSOT (MAP 전체)
 │       ├── DOCKER_LOCAL_STATUS.md   ← 로컬 PC 도커 현황 · C: 공간 부족 경위와 재발 대응
-│       ├── 수어-번역-키포인트-설계-기록-2026-09-20.md  ← 수어→한국어 번역: 데이터 실측 · 키포인트 파이프라인 설계 · 다른 기록 정정
 │       ├── conventions/             ← MAP 전체 공통 규약 (레포 횡단)
 │       │   ├── stacked-pr-playbook.md    ← 단계별 PR·플래그 기준 SSOT
 │       │   ├── stacked-pr-cheatsheet.md  ← 빠른 참조
@@ -80,6 +83,7 @@ task-management-repository/
 | ESG | [yj2trigger/ESG](https://github.com/yj2trigger/ESG) | 🟢 핵심 기능 완료 + 운영 중 |
 | MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | 🟡 recommend/schedule/trip 구현됨, 인증 미병합, 재사용캐시 설계 중 |
 | MAP (visitor_log) | 로컬 `c:\onedrive\_대학교\MAP\git\visitor_log` | 🟡 VPS·AR 씬 서비스 — spike 단계 |
+| 수어 번역 (sign-language) | 코드 레포 없음 (문서 `docs/sign-language/`) | 🟡 설계 브레인스토밍 중 — 스펙·코드 전 |
 
 ---
 

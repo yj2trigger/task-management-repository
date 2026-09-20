@@ -29,6 +29,7 @@
 | ESG | [ESG](https://github.com/yj2trigger/ESG) | 핵심 기능 완료 + 운영 중 |
 | MAP (map-service-user) | [we-meet-trip/map-service-user](https://github.com/we-meet-trip/map-service-user) | recommend/schedule/trip 도메인 구현됨(develop). 인증은 미병합(`feat/login-dev`). 재사용캐시 설계 진행 중 |
 | MAP (visitor_log) | 로컬 전용 `c:\onedrive\_대학교\MAP\git\visitor_log` | VPS·AR 씬 저장·블렌딩 서비스 — spike 단계 |
+| 수어 번역 (sign-language) | 코드 레포 없음. 문서 `docs/sign-language/` | 설계 브레인스토밍 중(스펙·코드 전). 진입 문서: `docs/sign-language/README.md` |
 | MAP (map-yoloservice) | `c:\onedrive\_대학교\MAP\git\map-yoloservice` | 카메라 실시간 인식(YOLO+Gemini Vision). 2026-08-14 infra 컨테이너 편입 + 실기 WebSocket 연결 검증 완료. 상세: `docs/MAP/map-yoloservice/DEV_LOG.md` |
 
 ---
@@ -44,6 +45,7 @@
 | 5 | `docs/MAP/conventions/stacked-pr-playbook.md` | **MAP 작업이면 필수** — PR 분할·플래그 기준 SSOT (요약: 같은 폴더 `stacked-pr-cheatsheet.md`) |
 | 6 | `tasks/in-progress.md` | 현재 진행 중인 태스크 |
 | 7 | `tasks/backlog.md` | 대기 중인 태스크 |
+| 8 | `docs/sign-language/README.md` | **수어 번역 작업이면 필수** — 문서 지도·데이터 위치·진행 상태. SSOT는 같은 폴더 `키포인트-설계-기록-2026-09-20.md` |
 
 ---
 
