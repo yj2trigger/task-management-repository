@@ -31,6 +31,7 @@
 | MAP (visitor_log) | 로컬 전용 `c:\onedrive\_대학교\MAP\git\visitor_log` | VPS·AR 씬 저장·블렌딩 서비스 — spike 단계 |
 | 수어 번역 (sign-language) | 코드 레포 없음. 문서 `docs/sign-language/` | 설계 브레인스토밍 중(스펙·코드 전). 진입 문서: `docs/sign-language/README.md` |
 | MAP (map-yoloservice) | `c:\onedrive\_대학교\MAP\git\map-yoloservice` | 카메라 실시간 인식(YOLO+Gemini Vision). 2026-08-14 infra 컨테이너 편입 + 실기 WebSocket 연결 검증 완료. 상세: `docs/MAP/map-yoloservice/DEV_LOG.md` |
+| LeRobot SO-101 (로봇 실습) | 코드 레포 없음. 로컬 환경만 (D드라이브 WSL). 문서 `docs/robotics/lerobot-so101-환경구축.md` | 환경 구축 완료(WSL Ubuntu-LeRobot + conda + lerobot 0.6.0). 로봇 팔 USB 2개 중 1개만 인식 — 실물 연결 확인 남음 |
 
 ---
 
