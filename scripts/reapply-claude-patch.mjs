@@ -7,6 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 function findLatestExtensionDir() {
   const extRoot = path.join(os.homedir(), ".vscode", "extensions");
@@ -51,13 +52,9 @@ const PATCHES = [
   },
 ];
 
-function main() {
-  const extDir = findLatestExtensionDir();
-  const file = path.join(extDir, "extension.js");
-  let src = fs.readFileSync(file, "utf8");
-  const original = src;
+// fs 없이 순수하게 문자열에 패치 배열을 적용. 목업 문자열로 테스트하기 위해 분리.
+export function applyPatchesToSource(src) {
   const results = [];
-
   for (const patch of PATCHES) {
     if (patch.alreadyDone.test(src)) {
       results.push({ name: patch.name, status: "이미 적용됨" });
@@ -71,6 +68,14 @@ function main() {
     src = src.slice(0, m.index) + patch.replace(...m) + src.slice(m.index + m[0].length);
     results.push({ name: patch.name, status: "적용함" });
   }
+  return { src, results };
+}
+
+function main() {
+  const extDir = findLatestExtensionDir();
+  const file = path.join(extDir, "extension.js");
+  const original = fs.readFileSync(file, "utf8");
+  const { src, results } = applyPatchesToSource(original);
 
   const failed = results.filter((r) => r.status.startsWith("실패"));
   const applied = results.filter((r) => r.status === "적용함");
@@ -93,4 +98,6 @@ function main() {
   if (failed.length > 0) process.exit(1);
 }
 
-main();
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}
