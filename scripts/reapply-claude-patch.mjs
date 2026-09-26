@@ -44,9 +44,9 @@ const PATCHES = [
   {
     name: "세션 열기: 현재 프로젝트에 없으면 전체 프로젝트에서 찾기",
     // let K=await B1.load(this.cwd,this.logger),V=d3(),B=...; W=await K.readSessionForHost($,B,{surfaceUnreadable:!0}),z="diffs",G=await K.getSessionDiffs($,this.cwd,W)}catch(K){
-    find: /let (\w+)=await (\w+)\.load\(this\.cwd,this\.logger\),(\w+)=(\w+\(\)),(\w+)=\3===void 0\?(\w+\$?):\((\w+),(\w+)\)=>(\w+\$?)\(\7,\8,void 0,\3\);(\w+)=await \1\.readSessionForHost\((\$|\w+),\5,\{surfaceUnreadable:!0\}\),z="diffs"/,
-    replace: (m, K, Store, V, VFn, B, JM, U, H, MFn, W, sid) =>
-      `let ${K}=await ${Store}.load(this.cwd,this.logger),${V}=${VFn},${B}=${V}===void 0?${JM}:(${U},${H})=>${MFn}(${U},${H},void 0,${V});${W}=await ${K}.readSessionForHost(${sid},${B},{surfaceUnreadable:!0});if(!${W}||${W}.length===0){try{let __fs=require("fs"),__path=require("path"),__os=require("os"),__root=__path.join(__os.homedir(),".claude","projects"),__dirs=await __fs.promises.readdir(__root,{withFileTypes:!0});for(let __d of __dirs){if(!__d.isDirectory())continue;let __hit=await __fs.promises.access(__path.join(__root,__d.name,\`\${${sid}}.jsonl\`)).then(()=>!0,()=>!1);if(!__hit)continue;let __K2=await ${Store}.load(__d.name,this.logger),__W2=await __K2.readSessionForHost(${sid},${B},{surfaceUnreadable:!0});if(__W2&&__W2.length>0){${K}=__K2,${W}=__W2}break}}catch{}}z="diffs"`,
+    find: /let (\w+)=await (\w+)\.load\(this\.cwd,this\.logger\),(\w+)=(\w+\(\)),(\w+)=\3===void 0\?(\w+\$?):\((\w+),(\w+)\)=>(\w+\$?)\(\7,\8,void 0,\3\);(\w+)=await \1\.readSessionForHost\((\$|\w+),\5,\{surfaceUnreadable:!0\}\),(\w+)="diffs"/,
+    replace: (m, K, Store, V, VFn, B, JM, U, H, MFn, W, sid, statusVar) =>
+      `let ${K}=await ${Store}.load(this.cwd,this.logger),${V}=${VFn},${B}=${V}===void 0?${JM}:(${U},${H})=>${MFn}(${U},${H},void 0,${V});${W}=await ${K}.readSessionForHost(${sid},${B},{surfaceUnreadable:!0});if(!${W}||${W}.length===0){try{let __fs=require("fs"),__path=require("path"),__os=require("os"),__root=__path.join(__os.homedir(),".claude","projects"),__dirs=await __fs.promises.readdir(__root,{withFileTypes:!0});for(let __d of __dirs){if(!__d.isDirectory())continue;let __hit=await __fs.promises.access(__path.join(__root,__d.name,\`\${${sid}}.jsonl\`)).then(()=>!0,()=>!1);if(!__hit)continue;let __K2=await ${Store}.load(__d.name,this.logger),__W2=await __K2.readSessionForHost(${sid},${B},{surfaceUnreadable:!0});if(__W2&&__W2.length>0){${K}=__K2,${W}=__W2}break}}catch{}}${statusVar}="diffs"`,
     alreadyDone: /__root=__path\.join\(__os\.homedir\(\),"\.claude","projects"\)/,
   },
 ];
