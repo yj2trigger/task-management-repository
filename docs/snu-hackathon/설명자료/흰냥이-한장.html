@@ -28,7 +28,7 @@
 
   /* 머리 */
   header { display: flex; align-items: center; gap: 6mm; }
-  .cat { width: 30mm; height: 30mm; flex: none; }
+  .cat { width: 30mm; height: auto; flex: none; }
   .title { font-size: 25pt; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
   .tagline { font-size: 13pt; font-weight: 700; color: var(--accent); margin: 1mm 0 1.5mm; }
   .lede { margin: 0; color: var(--sub); }
@@ -81,17 +81,7 @@
 <div class="page">
 
   <header>
-    <!-- 임시 고양이: 원화로 교체 예정 -->
-    <svg class="cat" viewBox="0 0 100 100" aria-label="흰냥이 임시 그림">
-      <ellipse cx="50" cy="66" rx="30" ry="24" fill="#fff" stroke="#2b2b33" stroke-width="2.5"/>
-      <circle cx="50" cy="42" r="22" fill="#fff" stroke="#2b2b33" stroke-width="2.5"/>
-      <path d="M31 30 L33 12 L45 23 Z" fill="#fff" stroke="#2b2b33" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M69 30 L67 12 L55 23 Z" fill="#fff" stroke="#2b2b33" stroke-width="2.5" stroke-linejoin="round"/>
-      <circle cx="42" cy="42" r="2.6" fill="#2b2b33"/><circle cx="58" cy="42" r="2.6" fill="#2b2b33"/>
-      <path d="M46 49 Q50 53 54 49" fill="none" stroke="#2b2b33" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="37" cy="49" r="3.2" fill="#f4b8a8"/><circle cx="63" cy="49" r="3.2" fill="#f4b8a8"/>
-      <path d="M78 74 Q95 68 88 52" fill="none" stroke="#2b2b33" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>
+    <img class="cat" src="흰냥이.png" alt="흰냥이">
     <div>
       <p class="title">흰냥이</p>
       <p class="tagline">정리는 귀찮지만, 키우는 건 즐겁다</p>
@@ -111,7 +101,7 @@
   <section>
     <h2><span class="no">2</span>흰냥이와 보내는 하루</h2>
     <div class="flow">
-      <div class="step"><span class="when">먹이 주기</span><b>던져 주기만 한다</b>파일·링크를 고양이에게 끌어다 놓거나 "10/31 시험"이라고 말한다.
+      <div class="step"><span class="when">먹이 주기</span><b>던져 주기만 한다</b>과제 공지를 고양이에게 끌어다 놓는다.
         <div class="bubble">냠냠. 마감 10/12 17시 맞아?</div></div>
       <div class="step"><span class="when">기억</span><b>고양이가 정리한다</b>무슨 자료인지, 언제 꺼내면 좋을지, 마감이 언제인지 알아서 기억한다.</div>
       <div class="step"><span class="when">몰두할 때</span><b>곁에서 조용히</b>내가 일하거나 놀 때는 방해하지 않고 화면 위를 걸어 다니며 지낸다.</div>
@@ -138,11 +128,11 @@
     <div>
       <h2><span class="no">4</span>하고 싶은 건 AI가, 해도 되는지는 앱이</h2>
       <div class="arch">
-        <div class="box ai"><b>고양이의 마음</b><span class="who">Croche가 맡음</span>
-          <ul><li>말·행동 선택지를 만들고 할 것을 고름</li><li>가고 싶은 곳과 기분을 정함</li><li>고양이 말투로 대화</li></ul></div>
+        <div class="box ai"><b>고양이의 생각과 기억</b><span class="who">Croche가 맡음</span>
+          <ul><li>함께한 일·약속을 기억으로 쌓음</li><li>기억을 근거로 할 것과 가고 싶은 곳을 고름</li><li>고양이 말투로 대화</li></ul></div>
         <div class="mid">하고<br>싶어<br>→<br>←<br>돼 /<br>안 돼</div>
-        <div class="box app"><b>고양이의 몸과 분별</b><span class="who">흰냥이 앱이 맡음</span>
-          <ul><li>말 걸어도 되는지, 갈 수 있는지 판단</li><li>사용자 반응으로 배운 값(치운 자리·거절)으로 계산</li><li>실제로 걷고 자료를 연다</li></ul></div>
+        <div class="box app"><b>고양이의 몸과 안전</b><span class="who">흰냥이 앱이 맡음</span>
+          <ul><li>사용자가 지쳐 보이는지·바쁜지 살핌</li><li>말 걸어도 되는지, 갈 수 있는지 판단</li><li>실제로 걷고 자료를 연다</li></ul></div>
       </div>
       <div class="note">AI가 늦거나 끊겨도 고양이는 멈추지 않고 정해진 말로 계속 지낸다.</div>
     </div>
