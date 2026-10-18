@@ -97,7 +97,9 @@
 
 **미결(제출 후 기준):** 636 수행자 독립 분할 방법(후보: TW·KU로 학습·CROWD로 시험, 설계 기록 §6.2), E·F 추가 여부, 636 도메인 한정 수용, **MediaPipe complexity와 카메라·학습 데이터 프레임레이트를 어떻게 맞출지**(H3-1·H3-2), PyTorch/TensorFlow 선택, 팀 저장소 라이선스, 지원금 사용처, 제출본 불일치 3건(주제 "번역", 없는 표를 가리키는 문장, 산출물 항목 누락)을 재제출·이후 보고서 중 어떻게 정리할지, 접수 확인과 선정 결과, 1주차 전 다운로드(103 정면 영상, 636 XML). *해소됨:* 신청 마감 시각·hwp 반영·시각 자료 승인(제출로 종료).
 
-**진행 중인 백그라운드 작업:** 없음.
+**2026-10-18 이후 구현 단계:** 코드 레포(`yj2trigger/sign-language-recognition`, 비공개, 로컬 `D:\sign-language-recognition`)가 생겼고 코드가 들어가기 시작했다. 기록은 [`../../logs/sign-language/`](../../logs/sign-language/README.md)(일지·시행착오·제약 표·데이터 출처·계획)에 있다. 이 문서 §4의 "코드 레포는 아직 없다", "1주차 전 다운로드 아직 안 받음"은 이 시점에 낡았다. 주요 변화: AI-Hub API 다운로드 가능(데이터셋 번호 103·636, 서버가 이어받기 미지원, `tools/aihub_download.sh`), mediapipe는 이 문서가 쓴 0.10.21(구형 API)로 고정, 103 단어 Training 원천 영상 첫 파일을 받는 중, 사용자 이용 조건 FAQ 반영.
+
+**진행 중인 백그라운드 작업(2026-10-18 저녁):** AI-Hub 다운로드 대기열(103 Training 단어 영상 01번 약 30GB → 103 Validation 단어 영상 약 118GB). 로그와 진행은 `D:\sign-language-data\downloads\logs\`. 정체는 "프로세스 생존 + 용량 증가 없음"으로 감시한다.
 
 ## 5. 프로세스가 어디까지 왔나 (`superpowers:brainstorming`, Architectural 경로)
 
