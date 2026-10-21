@@ -166,7 +166,7 @@ quote=quote("compileSdk(컴파일 API 수준): compile 시 사용할 android.jar
 # 9 ----------------------------------------------------------------
 P(dict(kind=["diag", "name"], title="템플릿과 UI 방식",
 parts=[
- dict(q="새 프로젝트를 어떤 템플릿으로 시작해야 하나? ⓐ Jetpack Compose로 액티비티 하나·최소 화면 ⓑ Compose 대신 XML layout(View 체계)으로 최소 화면 ⓒ Activity 두 개, 화면 간 이동(Navigation) 설정, 앱 바와 플로팅 버튼까지 XML layout으로",
+ dict(q="Android Studio에서 새 프로젝트를 만들 때 고르는 시작 틀(템플릿) 중, 다음 설명에 해당하는 템플릿 이름은? ⓐ Jetpack Compose로 액티비티 하나·최소 화면 ⓑ Compose 대신 XML layout(View 체계)으로 최소 화면 ⓒ Activity 두 개, 화면 간 이동(Navigation) 설정, 앱 바와 플로팅 버튼까지 XML layout으로",
       a="ⓐ Empty Activity(현재 기본 선택) ⓑ Empty Views Activity ⓒ Basic Views Activity",
       why="<p>템플릿 이름 해독법: <b>\"Views\"가 붙으면 XML</b>, 안 붙으면 Compose. \"Basic\"은 화면 2개·내비게이션·앱 바·FAB까지 들어간 큰 틀.</p>"),
  dict(q="템플릿 이름의 \"Views\"는 무엇을 가리키나? Empty Views Activity에서 XML을 View 객체로 변환해 화면에 올리는 함수는?",
