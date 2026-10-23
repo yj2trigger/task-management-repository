@@ -1,0 +1,16 @@
+a28e101 HEAD@{0}: merge feat2: Fast-forward
+4c7c87b HEAD@{1}: checkout: moving from feat2 to master
+a28e101 HEAD@{2}: merge feat1: Fast-forward
+cc5c8dd HEAD@{3}: checkout: moving from feat1 to feat2
+a28e101 HEAD@{4}: rebase (finish): returning to refs/heads/feat1
+a28e101 HEAD@{5}: rebase (pick): C3
+4ea2409 HEAD@{6}: rebase (pick): C2
+cc5c8dd HEAD@{7}: rebase (start): checkout feat2
+427d1b1 HEAD@{8}: checkout: moving from feat2 to feat1
+cc5c8dd HEAD@{9}: commit: C5
+28b5936 HEAD@{10}: commit: C4
+4c7c87b HEAD@{11}: checkout: moving from feat1 to feat2
+427d1b1 HEAD@{12}: commit: C3
+6d748ff HEAD@{13}: commit: C2
+4c7c87b HEAD@{14}: checkout: moving from master to feat1
+4c7c87b HEAD@{15}: commit (initial): C1

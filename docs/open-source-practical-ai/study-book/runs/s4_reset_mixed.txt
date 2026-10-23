@@ -1,0 +1,10 @@
+$ git reset --mixed HEAD~1
+$ git log --oneline
+1ff5831 C2
+c415177 C1
+$ git status -s
+ M a.txt
+$ cat a.txt
+C1
+C2
+C3

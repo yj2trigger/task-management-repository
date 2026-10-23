@@ -1,0 +1,15 @@
+Auto-merging oss/a.md
+CONFLICT (content): Merge conflict in oss/a.md
+Automatic merge failed; fix conflicts and then commit the result.
+$ git status -s
+UU oss/a.md
+$ cat oss/a.md
+# a.md
+hanyang
+university
+erica
+<<<<<<< HEAD
+Department of Artificial Intelligence
+=======
+AI Department
+>>>>>>> fix-b

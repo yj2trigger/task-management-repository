@@ -1,0 +1,9 @@
+$ git revert HEAD
+$ git log --oneline
+19a237c Revert "C3"
+1c159b6 C3
+1ff5831 C2
+c415177 C1
+$ cat a.txt
+C1
+C2
