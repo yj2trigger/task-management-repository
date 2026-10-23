@@ -1,0 +1,19 @@
+$ cat .gitignore
+*.log
+build/
+**/logs
+/config.json
+temp?.txt
+!keep.log
+$ git status -s --untracked-files=all   # 무시되지 않은 파일만 보임
+?? .gitignore
+?? keep.log
+?? sub/config.json
+?? temp12.txt
+$ git check-ignore -v debug.log keep.log build/out.o src/a/logs/x.txt config.json sub/config.json temp1.txt temp12.txt
+.gitignore:1:*.log	debug.log
+.gitignore:6:!keep.log	keep.log
+.gitignore:2:build/	build/out.o
+.gitignore:3:**/logs	src/a/logs/x.txt
+.gitignore:4:/config.json	config.json
+.gitignore:5:temp?.txt	temp1.txt

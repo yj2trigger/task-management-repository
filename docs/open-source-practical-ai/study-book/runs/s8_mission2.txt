@@ -1,0 +1,54 @@
+$ git switch -c practice
+$ (oss/c.md 에 apple, oss/d.md 에 red 작성)
+$ git add oss/c.md
+$ git commit -m "asdf"
+$ git log --oneline
+a6ecb2a asdf
+1cf21f3 C1
+$ git add oss/d.md
+$ git commit --amend -m "C6"
+$ git log --oneline
+d74f892 C6
+1cf21f3 C1
+$ git show --stat --format=%s HEAD
+C6
+
+ oss/c.md | 1 +
+ oss/d.md | 1 +
+ 2 files changed, 2 insertions(+)
+$ (c.md 에 banana 추가)
+$ git commit -am "oops"
+$ git log --oneline
+c4c3550 oops
+d74f892 C6
+1cf21f3 C1
+$ git reset HEAD~1
+$ git log --oneline
+d74f892 C6
+1cf21f3 C1
+$ git status -s
+ M oss/c.md
+$ git stash -m "banana line"
+$ git stash list
+stash@{0}: On practice: banana line
+$ git status -s   # (깨끗)
+$ git switch master
+$ ls oss
+a.md
+$ git switch practice
+$ git stash pop
+$ git stash list   # (비었음)
+$ git commit -am "C7"
+$ git log --oneline
+bca8dd2 C7
+d74f892 C6
+1cf21f3 C1
+$ git reflog
+bca8dd2 HEAD@{0}: commit: C7
+d74f892 HEAD@{1}: checkout: moving from master to practice
+1cf21f3 HEAD@{2}: checkout: moving from practice to master
+d74f892 HEAD@{3}: reset: moving to HEAD
+d74f892 HEAD@{4}: reset: moving to HEAD~1
+c4c3550 HEAD@{5}: commit: oops
+d74f892 HEAD@{6}: commit (amend): C6
+a6ecb2a HEAD@{7}: commit: asdf

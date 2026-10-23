@@ -1,0 +1,30 @@
+$ echo hello > README   # 새 파일
+$ git status -s
+?? README
+$ git add README
+$ git status -s
+A  README
+$ git commit -m "Add README"
+$ git status -s   # (출력 없음 = 깨끗)
+$ echo world >> README   # 추적 중인 파일 수정
+$ git status -s
+ M README
+$ git add README
+$ echo again >> README   # stage 후 또 수정
+$ git status -s
+MM README
+$ git diff            # staged 안 된 변경
+ hello
+ world
++again
+$ git diff --staged   # staged된 변경
+@@ -1 +1,2 @@
+ hello
++world
+$ git rm --cached README
+error: the following file has staged content different from both the
+file and the HEAD:
+    README
+(use -f to force removal)
+$ git status -s
+MM README

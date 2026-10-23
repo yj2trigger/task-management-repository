@@ -1,0 +1,9 @@
+$ echo secret.txt >> .gitignore
+$ echo key=2 > secret.txt
+$ git status -s   # 이미 추적 중이라 여전히 보임
+ M secret.txt
+?? .gitignore
+$ git rm --cached secret.txt
+$ git status -s
+D  secret.txt
+?? .gitignore

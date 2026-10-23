@@ -1,0 +1,14 @@
+$ git branch
+* master
+  testing
+$ git switch testing
+Switched to branch 'testing'
+$ git branch
+  master
+* testing
+$ (testing 에서 C2 커밋)
+$ git switch master
+$ git branch -d testing   # 아직 병합 안 됨
+error: the branch 'testing' is not fully merged
+hint: If you are sure you want to delete it, run 'git branch -D testing'
+hint: Disable this message with "git config set advice.forceDeleteBranch false"
