@@ -191,7 +191,20 @@ def build(mod_names, out_pdf, title, subtitle):
     subprocess.run([EDGE, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", "--allow-file-access-from-files",
                     f"--print-to-pdf={out_pdf}", html_path.as_uri()], check=True,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    number_pages(out_pdf)
     print("problems:", no, "->", out_pdf)
+
+
+def number_pages(pdf_path, fmt="- {n} -", align=1):
+    """쪽 하단에 쪽 번호를 찍는다(align 1 = 가운데, 2 = 오른쪽). 합본은 오른쪽에 전체 기준 번호를 따로 찍는다."""
+    import pymupdf
+    doc = pymupdf.open(pdf_path)
+    total = doc.page_count
+    for i, page in enumerate(doc):
+        r = page.rect
+        box = pymupdf.Rect(28, r.height - 24, r.width - 28, r.height - 10)
+        page.insert_textbox(box, fmt.format(n=i + 1, total=total), fontsize=8, color=(0.35, 0.35, 0.35), align=align)
+    doc.saveIncr()
 
 
 if __name__ == "__main__":
